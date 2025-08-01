@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WASMagick</title>
+    <link rel="stylesheet" href="tailwind.css">
+</head>
+<body class="bg-black text-white min-h-screen p-5">
+    <div class="container max-w-6xl mx-auto bg-black border border-white/20 rounded-2xl shadow-lg overflow-hidden">
+        <header class="text-center p-8 border-b border-white/20">
+            <h1 class="text-5xl font-bold mb-2">WASMagick</h1>
+            <p class="text-lg text-white/60">Image Converter Using Image Magick from WASM</p>
+        </header>
+
+        <main class="content p-8">
+            <!-- Image Upload -->
+            <div id="uploadArea" class="upload-area border-2 border-dashed border-white/30 rounded-lg p-12 text-center mb-6 transition-all duration-300 cursor-pointer hover:border-white/60 hover:bg-white/5 hover-lift">
+                <div class="upload-icon text-6xl mb-4 pulse-soft"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto h-16 w-16 lucide lucide-folder-up"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 2H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2Z"/><path d="M12 10v6"/><path d="m15 13-3-3-3 3"/></svg></div>
+                <div class="upload-text text-xl text-white/70 mb-4">Drag & drop image(s) here or click to browse</div>
+                <input type="file" id="fileInput" class="hidden" accept="image/*" multiple>
+            </div>
+            <button id="addMoreBtn" class="btn bg-black text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 border border-white/30 hover:bg-white/10 focus:outline-none focus:border-white/80 w-full mb-6 hidden">Add More Images</button>
+            <div id="errorMsg" class="error bg-red-500/20 text-red-400 p-4 rounded-lg border border-red-500/50 mb-6 hidden">
+                <div class="flex items-center">
+                    a<span class="text-xl mr-3"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-triangle-alert"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span>
+                    <span id="errorText"></span>
+                </div>
+            </div>
+
+            <!-- Controls and Previews -->
+            <div id="controlsAndPreviewsWrapper" class="grid grid-cols-1 md:grid-cols-[3fr_1fr] gap-8 hidden">
+                <!-- Controls Panel -->
+                <div id="controls" class="controls bg-black p-8 rounded-lg border border-white/20">
+                    <!-- Tab navigation for image manipulation options -->
+                    <div class="flex flex-wrap gap-2 mb-6 border-b border-white/20 pb-4">
+                        <button class="tab-button px-4 py-2 rounded-lg border border-white/30 active" data-tab="format">Format & Quality</button>
+                        <button class="tab-button px-4 py-2 rounded-lg border border-white/30" data-tab="resize">Resize & Crop</button>
+                        <button class="tab-button px-4 py-2 rounded-lg border border-white/30" data-tab="transform">Transform</button>
+                        <button class="tab-button px-4 py-2 rounded-lg border border-white/30" data-tab="filters">Filters & Effects</button>
+                        <button class="tab-button px-4 py-2 rounded-lg border border-white/30" data-tab="color">Color Adjustments</button>
+                        <button class="tab-button px-4 py-2 rounded-lg border border-white/30" data-tab="advanced">Advanced</button>
+                    </div>
+
+                    <!-- Format & Quality Options -->
+                    <div id="format-tab" class="tab-content active">
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="control-group">
+                                <label for="outputFormat" class="block text-lg font-semibold mb-2">Output Format</label>
+                                <select id="outputFormat" class="w-full bg-black border border-white/30 rounded-lg p-3 focus:outline-none focus:border-white/80">
+                                    <option value="jpeg">JPEG</option>
+                                    <option value="png">PNG</option>
+                                    <option value="webp">WebP</option>
+                                    <option value="bmp">BMP</option>
+                                    <option value="gif">GIF</option>
+                                    <option value="tiff">TIFF</option>
+                                    <option value="avif">AVIF</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label for="quality" class="block text-lg font-semibold mb-2">Quality <span id="qualityValue">85%</span></label>
+                                <input type="range" id="quality" class="range-slider" min="1" max="100" value="85">
+                            </div>
+                        </div>
+                        
+                        <!-- WebP specific options -->
+                        <div id="webpOptions" class="mt-4 hidden">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="webpLossless" class="mr-2">
+                                <span class="text-lg">Lossless Compression (ignores quality setting)</span>
+                            </label>
+                        </div>
+
+                        <!-- JPEG specific options -->
+                        <div id="jpegOptions" class="mt-4 hidden">
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div class="control-group">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" id="jpegProgressive" class="mr-2">
+                                        <span class="text-lg">Progressive JPEG</span>
+                                    </label>
+                                </div>
+                                <div class="control-group">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" id="jpegOptimize" class="mr-2" checked>
+                                        <span class="text-lg">Optimize Huffman Tables</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PNG specific options -->
+                        <div id="pngOptions" class="mt-4 hidden">
+                            <div class="control-group">
+                                <label for="pngCompression" class="block text-lg font-semibold mb-2">Compression Level <span id="pngCompressionValue">6</span></label>
+                                <input type="range" id="pngCompression" class="range-slider" min="0" max="9" value="6">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resize & Crop Options -->
+                    <div id="resize-tab" class="tab-content">
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="control-group">
+                                <label class="block text-lg font-semibold mb-2">Resize Mode</label>
+                                <select id="resizeMode" class="w-full bg-black border border-white/30 rounded-lg p-3 focus:outline-none focus:border-white/80">
+                                    <option value="none">No Resize</option>
+                                    <option value="dimensions">Custom Dimensions</option>
+                                    <option value="percentage">Percentage</option>
+                                    <option value="preset">Preset Sizes</option>
+                                    <option value="maxdimension">Max Dimension</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label class="block text-lg font-semibold mb-2">Aspect Ratio</label>
+                                <select id="aspectRatio" class="w-full bg-black border border-white/30 rounded-lg p-3 focus:outline-none focus:border-white/80">
+                                    <option value="preserve">Preserve Original</option>
+                                    <option value="force">Force New Dimensions</option>
+                                    <option value="crop">Crop to Fit</option>
+                                    <option value="pad">Pad to Fit</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Controls for custom dimensions -->
+                        <div id="dimensionsControls" class="grid md:grid-cols-2 gap-6 mt-4 hidden">
+                            <div class="control-group">
+                                <label for="customWidth" class="block text-lg font-semibold mb-2">Width (px)</label>
+                                <input type="number" id="customWidth" class="w-full bg-black border border-white/30 rounded-lg p-3 focus:outline-none focus:border-white/80" placeholder="Auto">
+                            </div>
+                            <div class="control-group">
+                                <label for="customHeight" class="block text-lg font-semibold mb-2">Height (px)</label>
+                                <input type="number" id="customHeight" class="w-full bg-black border border-white/30 rounded-lg p-3 focus:outline-none focus:border-white/80" placeholder="Auto">
+                            </div>
+                        </div>
+
+                        <!-- Controls for percentage scaling -->
+                        <div id="percentageControls" class="mt-4 hidden">
+                            <label for="scalePercentage" class="block text-lg font-semibold mb-2">Scale <span id="scaleValue">100%</span></label>
+                            <input type="range" id="scalePercentage" class="range-slider" min="10" max="500" value="100">
+                        </div>
+
+                        <!-- Controls for preset sizes -->
+                        <div id="presetControls" class="mt-4 hidden">
+                            <label class="block text-lg font-semibold mb-2">Preset Sizes</label>
+                            <select id="presetSize" class="w-full bg-black border border-white/30 rounded-lg p-3 focus:outline-none focus:border-white/80">
+                                <option value="thumbnail">Thumbnail (150x150)</option>
+                                <option value="small">Small (400x300)</option>
+                                <option value="medium">Medium (800x600)</option>
+                                <option value="large">Large (1200x900)</option>
+                                <option value="hd">HD (1920x1080)</option>
+                                <option value="4k">4K (3840x2160)</option>
+                            </select>
+                        </div>
+
+                        <!-- Controls for max dimension -->
+                        <div id="maxDimensionControls" class="mt-4 hidden">
+                            <label for="maxDimension" class="block text-lg font-semibold mb-2">Max Dimension (px)</label>
+                            <input type="number" id="maxDimension" class="w-full bg-black border border-white/30 rounded-lg p-3 focus:outline-none focus:border-white/80" value="1920" placeholder="1920">
+                        </div>
+
+                        <!-- Image resampling algorithm selection -->
+                        <div class="mt-4">
+                            <label class="block text-lg font-semibold mb-2">Resampling Algorithm</label>
+                            <select id="resamplingAlgorithm" class="w-full bg-black border border-white/30 rounded-lg p-3 focus:outline-none focus:border-white/80">
+                                <option value="lanczos">Lanczos (High Quality)</option>
+                                <option value="bicubic">Bicubic</option>
+                                <option value="bilinear">Bilinear (Fast)</option>
+                                <option value="nearest">Nearest Neighbor</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Transform Options -->
+                    <div id="transform-tab" class="tab-content">
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="control-group">
+                                <label for="rotation" class="block text-lg font-semibold mb-2">Rotation <span id="rotationValue">0°</span></label>
+                                <input type="range" id="rotation" class="range-slider" min="0" max="360" value="0">
+                            </div>
+                            <div class="control-group">
+                                <label class="block text-lg font-semibold mb-2">Quick Rotate</label>
+                                <div class="flex gap-2">
+                                    <button class="btn bg-black text-white py-2 px-4 rounded border border-white/30 hover:bg-white/10 quick-rotate-btn" data-degrees="90">90°</button>
+                                    <button class="btn bg-black text-white py-2 px-4 rounded border border-white/30 hover:bg-white/10 quick-rotate-btn" data-degrees="180">180°</button>
+                                    <button class="btn bg-black text-white py-2 px-4 rounded border border-white/30 hover:bg-white/10 quick-rotate-btn" data-degrees="270">270°</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-6 mt-4">
+                            <div class="control-group">
+                                <label class="block text-lg font-semibold mb-2">Flip</label>
+                                <div class="flex gap-4">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" id="flipHorizontal" class="mr-2">
+                                        Horizontal
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" id="flipVertical" class="mr-2">
+                                        Vertical
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="control-group">
+                                <label for="skewX" class="block text-lg font-semibold mb-2">Skew X <span id="skewXValue">0°</span></label>
+                                <input type="range" id="skewX" class="range-slider" min="-45" max="45" value="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filters & Effects Options -->
+                    <div id="filters-tab" class="tab-content">
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="control-group">
+                                <label for="blur" class="block text-lg font-semibold mb-2">Blur <span id="blurValue">0px</span></label>
+                                <input type="range" id="blur" class="range-slider" min="0" max="20" value="0">
+                            </div>
+                            <div class="control-group">
+                                <label for="sharpen" class="block text-lg font-semibold mb-2">Sharpen <span id="sharpenValue">0</span></label>
+                                <input type="range" id="sharpen" class="range-slider" min="0" max="100" value="0">
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-6 mt-4">
+                            <div class="control-group">
+                                <label class="block text-lg font-semibold mb-2">Filter Effects</label>
+                                <select id="filterEffect" class="w-full bg-black border border-white/30 rounded-lg p-3 focus:outline-none focus:border-white/80">
+                                    <option value="none">None</option>
+                                    <option value="grayscale">Grayscale</option>
+                                    <option value="sepia">Sepia</option>
+                                    <option value="invert">Invert</option>
+                                    <option value="vintage">Vintage</option>
+                                    <option value="emboss">Emboss</option>
+                                    <option value="edge">Edge Detection</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label for="noise" class="block text-lg font-semibold mb-2">Noise Reduction <span id="noiseValue">0</span></label>
+                                <input type="range" id="noise" class="range-slider" min="0" max="100" value="0">
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-6 mt-4">
+                            <div class="control-group">
+                                <label for="vignette" class="block text-lg font-semibold mb-2">Vignette <span id="vignetteValue">0</span></label>
+                                <input type="range" id="vignette" class="range-slider" min="0" max="100" value="0">
+                            </div>
+                            <div class="control-group">
+                                <label for="pixelate" class="block text-lg font-semibold mb-2">Pixelate <span id="pixelateValue">0</span></label>
+                                <input type="range" id="pixelate" class="range-slider" min="0" max="20" value="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Color Adjustment Options -->
+                    <div id="color-tab" class="tab-content">
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="control-group">
+                                <label for="brightness" class="block text-lg font-semibold mb-2">Brightness <span id="brightnessValue">0</span></label>
+                                <input type="range" id="brightness" class="range-slider" min="-100" max="100" value="0">
+                            </div>
+                            <div class="control-group">
+                                <label for="contrast" class="block text-lg font-semibold mb-2">Contrast <span id="contrastValue">0</span></label>
+                                <input type="range" id="contrast" class="range-slider" min="-100" max="100" value="0">
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-6 mt-4">
+                            <div class="control-group">
+                                <label for="saturation" class="block text-lg font-semibold mb-2">Saturation <span id="saturationValue">0</span></label>
+                                <input type="range" id="saturation" class="range-slider" min="-100" max="100" value="0">
+                            </div>
+                            <div class="control-group">
+                                <label for="hue" class="block text-lg font-semibold mb-2">Hue Shift <span id="hueValue">0°</span></label>
+                                <input type="range" id="hue" class="range-slider" min="0" max="360" value="0">
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-6 mt-4">
+                            <div class="control-group">
+                                <label for="gamma" class="block text-lg font-semibold mb-2">Gamma <span id="gammaValue">1.0</span></label>
+                                <input type="range" id="gamma" class="range-slider" min="0.1" max="3.0" step="0.1" value="1.0">
+                            </div>
+                            <div class="control-group">
+                                <label for="exposure" class="block text-lg font-semibold mb-2">Exposure <span id="exposureValue">0</span></label>
+                                <input type="range" id="exposure" class="range-slider" min="-200" max="200" value="0">
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-6 mt-4">
+                            <div class="control-group">
+                                <label for="highlights" class="block text-lg font-semibold mb-2">Highlights <span id="highlightsValue">0</span></label>
+                                <input type="range" id="highlights" class="range-slider" min="-100" max="100" value="0">
+                            </div>
+                            <div class="control-group">
+                                <label for="shadows" class="block text-lg font-semibold mb-2">Shadows <span id="shadowsValue">0</span></label>
+                                <input type="range" id="shadows" class="range-slider" min="-100" max="100" value="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Options -->
+                    <div id="advanced-tab" class="tab-content">
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="control-group">
+                                <label class="block text-lg font-semibold mb-2">Color Space</label>
+                                <select id="colorSpace" class="w-full bg-black border border-white/30 rounded-lg p-3 focus:outline-none focus:border-white/80">
+                                    <option value="srgb">sRGB</option>
+                                    <option value="adobergb">Adobe RGB</option>
+                                    <option value="prophoto">ProPhoto RGB</option>
+                                    <option value="p3">Display P3</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label class="block text-lg font-semibold mb-2">DPI/Resolution</label>
+                                <input type="number" id="dpi" class="w-full bg-black border border-white/30 rounded-lg p-3 focus:outline-none focus:border-white/80" value="72" min="72" max="600">
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-6 mt-4">
+                            <div class="control-group">
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="stripMetadata" class="mr-2" checked>
+                                    <span class="text-lg">Strip EXIF/Metadata</span>
+                                </label>
+                            </div>
+                            <div class="control-group">
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="autoOrient" class="mr-2" checked>
+                                    <span class="text-lg">Auto-Orient from EXIF</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-6 mt-4">
+                            <div class="control-group">
+                                <label for="chromaSubsampling" class="block text-lg font-semibold mb-2">Chroma Subsampling (JPEG)</label>
+                                <select id="chromaSubsampling" class="w-full bg-black border border-white/30 rounded-lg p-3 focus:outline-none focus:border-white/80">
+                                    <option value="4:4:4">4:4:4 (No subsampling)</option>
+                                    <option value="4:2:2">4:2:2 (Moderate)</option>
+                                    <option value="4:2:0">4:2:0 (Standard)</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label for="unsharpMask" class="block text-lg font-semibold mb-2">Unsharp Mask <span id="unsharpMaskValue">0</span></label>
+                                <input type="range" id="unsharpMask" class="range-slider" min="0" max="500" value="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Convert and Reset Buttons -->
+                    <div class="mt-8 pt-6 border-t border-white/20">
+                        <div class="flex gap-4">
+                            <button id="convertBtn" class="btn flex-1 bg-black text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 border border-white/30 hover:bg-white/10 focus:outline-none focus:border-white/80">
+                                <span id="convertBtnText">Convert Image(s)</span>
+                            </button>
+                            <button id="resetOptionsBtn" class="btn bg-black text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 border border-white/30 hover:bg-white/10 focus:outline-none focus:border-white/80">
+                                Reset Options
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Thumbnail Preview Strip -->
+                <div id="thumbnailPreviewStrip" class="hidden md:flex flex-col gap-4 overflow-y-auto max-h-[500px] p-2 rounded-lg border border-white/20">
+                    <!-- Thumbnails are dynamically inserted here -->
+                </div>
+            </div>
+
+            <!-- Image Preview Section -->
+            <div id="previewSection" class="preview-section mt-6 hidden">
+                <!-- Single image view -->
+                <div id="singleImageView" class="grid md:grid-cols-2 gap-8 mb-6 hidden">
+                    <div class="preview-card bg-black border border-white/20 rounded-lg p-6 text-center hover-lift">
+                        <h3 class="text-2xl font-semibold mb-4">Original</h3>
+                        <img id="originalPreviewTwoCol" alt="Original image" class="max-w-full max-h-80 mx-auto rounded-lg shadow-md">
+                        <div id="originalInfoTwoCol" class="file-info mt-4 text-white/60"></div>
+                    </div>
+                    <div class="preview-card bg-black border border-white/20 rounded-lg p-6 text-center hover-lift">
+                        <h3 class="text-2xl font-semibold mb-4">Converted</h3>
+                        <img id="convertedPreviewTwoCol" alt="Converted image" class="max-w-full max-h-80 mx-auto rounded-lg shadow-md">
+                        <div id="convertedInfoTwoCol" class="file-info mt-4 text-white/60"></div>
+                         <div class="card-loader single-card-loader text-center hidden mt-4">
+                            <div class="spinner w-8 h-8 border-2 border-t-white/80 border-white/20 rounded-full mx-auto mb-2 spin"></div>
+                            <p class="text-white/60 text-sm">Converting...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Multiple image carousel view -->
+                <div id="multiImageCarouselView" class="hidden">
+                    <div id="carouselContainer" class="relative">
+                        <!-- Carousel slides are dynamically inserted here -->
+                    </div>
+                    <div id="carouselNav" class="flex items-center justify-center gap-4 mt-4">
+                        <button id="prevBtn" class="p-2 rounded-full hover:bg-white/10 transition"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left"><path d="m15 18-6-6 6-6"/></svg></button>
+                        <span id="carouselCounter" class="text-white/70"></span>
+                        <button id="nextBtn" class="p-2 rounded-full hover:bg-white/10 transition"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg></button>
+                    </div>
+                </div>
+                <!-- Wiper Lightbox for image comparison -->
+                <div id="wiperLightbox" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 hidden">
+                    <div class="relative w-full max-w-6xl">
+                         <div id="wiperCarousel" class="relative">
+                            <!-- Wiper slides are dynamically inserted here -->
+                         </div>
+                        <button id="prevWiperBtn" class="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-full text-white bg-black/50 p-2 rounded-full hover:bg-black/80 transition z-10"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8 lucide lucide-chevron-left"><path d="m15 18-6-6 6-6"/></svg></button>
+                        <button id="nextWiperBtn" class="absolute top-1/2 right-0 -translate-y-1/2 translate-x-full text-white bg-black/50 p-2 rounded-full hover:bg-black/80 transition z-10"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8 lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg></button>
+                    
+                        <div class="absolute bg-black py-2 px-4 border border-white/20 rounded-lg -bottom-4 left-1/2 -translate-x-1/2 translate-y-full flex gap-4 mt-4">
+                            <button id="downloadWiperImageBtn" class="btn bg-black text-white font-bold py-2 px-4 rounded-md border border-white/30 hover:bg-white/10">Download this Image</button>
+                            <button id="downloadAllWiperBtn" class="btn bg-black text-white font-bold py-2 px-4 rounded-md border border-white/30 hover:bg-white/10">Download All (.zip)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading indicator for image processing -->
+                <div id="loading" class="loading text-center p-6 hidden">
+                    <div class="spinner w-12 h-12 border-4 border-t-white/80 border-white/20 rounded-full mx-auto mb-4 spin"></div>
+                    <p id="loadingText" class="text-white/70 mb-4">Processing your images...</p>
+                    <div class="w-64 h-2 bg-white/20 rounded-full mx-auto overflow-hidden">
+                        <div id="progressBar" class="progress-bar h-full bg-white/60 rounded-full"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Download and Reset Section -->
+            <div id="downloadSection" class="text-center mt-8 hidden">
+                <button id="downloadSingleBtn" class="btn bg-black text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 border border-white/30 hover:bg-white/10 focus:outline-none focus:border-white/80 mr-4 hidden">
+                    Download Image
+                </button>
+                <button id="downloadAllBtn" class="btn bg-black text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 border border-white/30 hover:bg-white/10 focus:outline-none focus:border-white/80 mr-4 hidden">
+                    Download All (.zip)
+                </button>
+                <button id="compareWiperBtn" class="btn bg-black text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 border border-white/30 hover:bg-white/10 focus:outline-none focus:border-white/80 mr-4 hidden">
+                    Compare with Wiper
+                </button>
+                <button id="resetBtn" class="btn bg-black text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 border border-white/30 hover:bg-white/10 focus:outline-none focus:border-white/80">
+                    Start Over
+                </button>
+            </div>
+        </main>
+    </div>
+    
+    <template id="carouselSlideTemplate">
+        <div class="carousel-slide grid md:grid-cols-2 gap-8">
+             <div class="preview-card bg-black border border-white/20 rounded-lg p-6 text-center">
+                <h3 class="text-2xl font-semibold mb-4">Original</h3>
+                <img alt="Original image" class="originalPreview max-w-full max-h-80 mx-auto rounded-lg shadow-md">
+                <div class="originalInfo file-info mt-4 text-white/60"></div>
+            </div>
+            <div class="preview-card bg-black border border-white/20 rounded-lg p-6 text-center">
+                <h3 class="text-2xl font-semibold mb-4">Converted</h3>
+                <img alt="Converted image" class="convertedPreview max-w-full max-h-80 mx-auto rounded-lg shadow-md">
+                <div class="convertedInfo file-info mt-4 text-white/60"></div>
+                 <div class="card-loader text-center hidden mt-4">
+                    <div class="spinner w-8 h-8 border-2 border-t-white/80 border-white/20 rounded-full mx-auto mb-2 spin"></div>
+                    <p class="text-white/60 text-sm">Converting...</p>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script type="module" src="wasm_script.js"></script>
+</body>
+</html>
