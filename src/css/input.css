@@ -3,7 +3,7 @@
 @layer base {
     @font-face {
         font-family: 'Google Sans Code';
-        src: url('GoogleSansCode-VariableFont_wght.ttf') format('truetype');
+        src: url('/css/GoogleSansCode-VariableFont_wght.ttf') format('truetype');
         font-weight: 100 900;
         font-style: normal;
         font-display: swap;
