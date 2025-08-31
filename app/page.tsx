@@ -13,7 +13,6 @@ export default function Home() {
     // State for input values
     const [quality, setQuality] = useState(85);
     const [pngCompression, setPngCompression] = useState(6);
-    const [webpLossless, setWebpLossless] = useState(false);
     const [jpegProgressive, setJpegProgressive] = useState(false);
     const [jpegOptimize, setJpegOptimize] = useState(true);
     const [scalePercentage, setScalePercentage] = useState(100);
@@ -47,6 +46,7 @@ export default function Home() {
     const [wiperLightboxVisible, setWiperLightboxVisible] = useState(false);
     const [imageFiles, setImageFiles] = useState<File[]>([]);
     const [convertedFiles, setConvertedFiles] = useState<Map<string, Blob>>(new Map());
+    const [targetDimensions, setTargetDimensions] = useState<Map<string, { width: number; height: number }>>(new Map());
     const [wiperCurrentIndex, setWiperCurrentIndex] = useState(0);
     const wiperSliderRef = useRef<HTMLInputElement>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -103,6 +103,7 @@ export default function Home() {
         showLoading(imageFiles.length);
 
         const newConvertedFiles = new Map<string, Blob>();
+        const newTargetDimensions = new Map<string, { width: number; height: number }>();
 
         const loadImage = (f: File) => new Promise<HTMLImageElement>((resolve, reject) => {
             const img = new Image();
@@ -122,16 +123,12 @@ export default function Home() {
                     return MagickFormat.WebP;
                 case 'jxl':
                     return MagickFormat.Jxl;
-                case 'gif':
-                    return MagickFormat.Gif;
                 case 'bmp':
                     return MagickFormat.Bmp;
                 case 'tiff':
                     return MagickFormat.Tiff;
                 case 'ico':
                     return MagickFormat.Ico;
-                case 'svg':
-                    return MagickFormat.Svg;
                 default:
                     return MagickFormat.Jpeg;
             }
@@ -235,13 +232,13 @@ export default function Home() {
                     stripMetadata,
                     autoOrient,
                     pngCompression,
-                    webpLossless,
                     jpegProgressive,
                     jpegOptimize,
                     aspectMode: aspectRatio as any,
                     padColor: { r: 0, g: 0, b: 0, a: 255 },
                 });
                 newConvertedFiles.set(file.name, blob);
+                newTargetDimensions.set(file.name, { width: Math.round(targetWidth), height: Math.round(targetHeight) });
             } catch (err) {
                 console.error(`Failed to convert ${file.name}:`, err);
                 showError(`Failed to convert ${file.name}`);
@@ -249,6 +246,7 @@ export default function Home() {
         }
 
         setConvertedFiles(newConvertedFiles);
+        setTargetDimensions(newTargetDimensions);
         hideLoading();
     };
 
@@ -309,7 +307,6 @@ export default function Home() {
         setPresetSize('thumbnail');
         setMaxDimension(1920);
         setResamplingAlgorithm('lanczos');
-        setWebpLossless(false);
         setJpegProgressive(false);
         setJpegOptimize(true);
         setStripMetadata(true);
@@ -400,7 +397,7 @@ export default function Home() {
         }
     };
 
-    const ImageRow = ({ file, index, onDelete, onPreview }: { file: File, index: number, onDelete: (fileName: string) => void, onPreview: (index: number) => void }) => {
+    const ImageRow = ({ file, index, targetDimensions, onDelete, onPreview }: { file: File, index: number, targetDimensions: Map<string, { width: number; height: number }>, onDelete: (fileName: string) => void, onPreview: (index: number) => void }) => {
         const [imageUrl, setImageUrl] = useState<string | null>(null);
         const [dimensions, setDimensions] = useState<{ width: number, height: number } | null>(null);
         const convertedBlob = convertedFiles.get(file.name);
@@ -427,7 +424,13 @@ export default function Home() {
                         <div className="min-w-0 flex-1">
                             <p className="font-semibold file-name text-sm sm:text-base text-white file-name-smart" title={file.name}>{file.name}</p>
                             <p className="text-xs sm:text-sm text-white/60 dimensions">
-                                {dimensions ? `${dimensions.width} × ${dimensions.height}px` : ''}
+                                {dimensions ? (
+                                    targetDimensions.has(file.name) ? (
+                                        `${dimensions.width}×${dimensions.height}px → ${targetDimensions.get(file.name)!.width}×${targetDimensions.get(file.name)!.height}px`
+                                    ) : (
+                                        `${dimensions.width}×${dimensions.height}px`
+                                    )
+                                ) : ''}
                             </p>
                         </div>
                     </div>
@@ -465,7 +468,7 @@ export default function Home() {
 
 
     return (
-        <div className="min-h-screen p-5">
+        <div className="p-5">
             <div className="container max-w-6xl mx-auto bg-black border border-white/20 rounded-2xl shadow-lg overflow-hidden">
                 <header className="text-center p-8 border-b border-white/20">
                     <h1 className="text-5xl font-bold mb-2">WASMagick</h1>
@@ -473,7 +476,7 @@ export default function Home() {
                 </header>
 
                 <main className="content p-8">
-                    <div id="uploadArea" onClick={() => document.getElementById('fileInput')?.click()} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} className="upload-area border-2 border-dashed border-white/30 rounded-lg p-12 text-center mb-6 transition-all duration-300 cursor-pointer hover:border-white/60 hover:bg-white/5 hover-lift">
+                    <div id="uploadArea" onClick={() => document.getElementById('fileInput')?.click()} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} className="upload-area border-2 border-dashed border-white/30 rounded-lg p-6 text-center mb-6 transition-all duration-300 cursor-pointer hover:border-white/60 hover:bg-white/5 hover-lift">
                         <div className="upload-icon text-6xl mb-4 pulse-soft"><FolderUp className="mx-auto h-16 w-16" /></div>
                         <div className="upload-text text-xl text-white/70 mb-4">Drag & drop image(s) here or click to browse</div>
                         <input type="file" id="fileInput" className="hidden" accept="image/*" multiple onChange={handleFileSelect} />
@@ -500,7 +503,7 @@ export default function Home() {
                                     <button onClick={() => switchSettingsTab('resize')} className={`tab-button px-4 py-2 rounded-lg border border-white/30 cursor-pointer ${activeSettingsTab === 'resize' ? 'bg-white/10' : ''}`} data-tab="resize">Resize & Crop</button>
                                     <button onClick={() => switchSettingsTab('transform')} className={`tab-button px-4 py-2 rounded-lg border border-white/30 cursor-pointer ${activeSettingsTab === 'transform' ? 'bg-white/10' : ''}`} data-tab="transform">Transform</button>
                                     <button onClick={() => switchSettingsTab('filters')} className={`tab-button px-4 py-2 rounded-lg border border-white/30 cursor-pointer ${activeSettingsTab === 'filters' ? 'bg-white/10' : ''}`} data-tab="filters">Filters & Effects</button>
-                                    <button onClick={() => switchSettingsTab('color')} className={`tab-button px-4 py-2 rounded-lg border border-white/30 cursor-pointer ${activeSettingsTab === 'color' ? 'bg-white/10' : ''}`} data-tab="color">Color Adjustments</button>
+                                    <button onClick={() => switchSettingsTab('color')} className={`tab-button px-4 py-2 rounded-lg border border-white/30 cursor-pointer ${activeSettingsTab === 'color' ? 'bg-white/10' : ''}`} data-tab="color">Colour Adjustments</button>
                                     <button onClick={() => switchSettingsTab('advanced')} className={`tab-button px-4 py-2 rounded-lg border border-white/30 cursor-pointer ${activeSettingsTab === 'advanced' ? 'bg-white/10' : ''}`} data-tab="advanced">Advanced</button>
                                 </div>
 
@@ -514,22 +517,14 @@ export default function Home() {
                                                 <option value="webp">WebP</option>
                                                 <option value="jxl">JPXL</option>
                                                 <option value="bmp">BMP</option>
-                                                <option value="gif">GIF</option>
                                                 <option value="tiff">TIFF</option>
                                                 <option value="ico">ICO</option>
-                                                <option value="svg">SVG</option>
                                             </select>
                                         </div>
                                         <div className="control-group">
                                             <label htmlFor="quality" className="block text-lg font-semibold mb-2">Quality <span id="qualityValue">{quality}%</span></label>
                                             <input type="range" id="quality" className="range-slider w-full cursor-pointer" min="1" max="100" value={quality} onChange={(e) => setQuality(parseInt(e.target.value))} />
                                         </div>
-                                    </div>
-                                    <div id="webpOptions" className={`mt-4 ${outputFormat === 'webp' ? '' : 'hidden'}`}>
-                                        <label className="flex items-center">
-                                            <input type="checkbox" id="webpLossless" className="mr-2 cursor-pointer" checked={webpLossless} onChange={(e) => setWebpLossless(e.target.checked)} />
-                                            <span className="text-lg">Lossless Compression (ignores quality setting)</span>
-                                        </label>
                                     </div>
                                     <div id="jpegOptions" className={`mt-4 ${outputFormat === 'jpeg' ? '' : 'hidden'}`}>
                                         <div className="grid md:grid-cols-2 gap-6">
@@ -771,7 +766,7 @@ export default function Home() {
                             </div>
                             <div id="image-list" className="space-y-4">
                                 {imageFiles.map((file, index) => (
-                                    <ImageRow key={index} file={file} index={index} onDelete={(fileName) => setImageFiles(files => files.filter(f => f.name !== fileName))} onPreview={openWiperLightbox} />
+                                    <ImageRow key={index} file={file} index={index} targetDimensions={targetDimensions} onDelete={(fileName) => setImageFiles(files => files.filter(f => f.name !== fileName))} onPreview={openWiperLightbox} />
                                 ))}
                             </div>
                         </div>

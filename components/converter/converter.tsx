@@ -8,6 +8,8 @@ import {
   MagickColor,
   ColorSpace,
   Percentage,
+  IMagickGeometry,
+  MagickGeometry,
 } from "@imagemagick/magick-wasm";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Label } from "../ui/label";
@@ -85,14 +87,10 @@ export const Converter = ({
         return "image/webp";
       case MagickFormat.Jxl:
         return "image/jxl";
-      case MagickFormat.Gif:
-        return "image/gif";
       case MagickFormat.Bmp:
         return "image/bmp";
       case MagickFormat.Tiff:
         return "image/tiff";
-      case MagickFormat.Svg:
-        return "image/svg+xml";
       case MagickFormat.Ico:
         return "image/x-icon";
       default:
@@ -570,7 +568,7 @@ export const convertFileWithMagick = async (
                     // Crop from center using explicit coordinates
                     try {
                         // @ts-ignore - Use crop with geometry string for precise control
-                        image.crop(`${boxW}x${boxH}+${offsetX}+${offsetY}`);
+                        image.crop(new MagickGeometry(offsetX, offsetY, boxW, boxH));
                     } catch (cropError) {
                         try {
                             // Alternative: crop with individual parameters
@@ -679,7 +677,7 @@ export const convertFileWithMagick = async (
                                                 );
                                                 // @ts-ignore
                                                 image.crop(
-                                                    `${boxW}x${boxH}+${cropX}+${cropY}`
+                                                    new MagickGeometry(cropX, cropY, boxW, boxH)
                                                 );
                                             } else {
                                                 // @ts-ignore
@@ -903,14 +901,10 @@ export const convertFileWithMagick = async (
                         return "image/webp";
                     case MagickFormat.Jxl:
                         return "image/jxl";
-                    case MagickFormat.Gif:
-                        return "image/gif";
                     case MagickFormat.Bmp:
                         return "image/bmp";
                     case MagickFormat.Tiff:
                         return "image/tiff";
-                    case MagickFormat.Svg:
-                        return "image/svg+xml";
                     case MagickFormat.Ico:
                         return "image/x-icon";
                     default:
@@ -986,20 +980,12 @@ export const ConvertOptions = ({
           <Label htmlFor="r5">Ico</Label>
         </div>
         <div className="flex items-center space-x-2">
-          <RadioGroupItem value={MagickFormat.Gif} id="r6" />
-          <Label htmlFor="r6">Gif</Label>
+          <RadioGroupItem value={MagickFormat.Tiff} id="r6" />
+          <Label htmlFor="r6">Tiff</Label>
         </div>
         <div className="flex items-center space-x-2">
-          <RadioGroupItem value={MagickFormat.Tiff} id="r7" />
-          <Label htmlFor="r7">Tiff</Label>
-        </div>
-        <div className="flex items-center space-x-2">
-          <RadioGroupItem value={MagickFormat.Bmp} id="r8" />
-          <Label htmlFor="r8">Bmp</Label>
-        </div>
-        <div className="flex items-center space-x-2">
-          <RadioGroupItem value={MagickFormat.Svg} id="r9" />
-          <Label htmlFor="r9">Svg</Label>
+          <RadioGroupItem value={MagickFormat.Bmp} id="r7" />
+          <Label htmlFor="r7">Bmp</Label>
         </div>
       </RadioGroup>
       <div>
