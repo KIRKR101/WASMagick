@@ -1,0 +1,132 @@
+/**
+ * WASMagick Settings Types
+ * Type definitions for all image processing settings
+ */
+
+/** Image export format options */
+export type ImageFormat = 'WebP' | 'JPEG' | 'PNG' | 'AVIF' | 'JXL' | 'TIFF' | 'GIF';
+
+/** Rotation angle options */
+export type RotationAngle = '0' | '90' | '180' | '-90';
+
+/** Color space options */
+export type ColorSpaceOption = 'RGB' | 'Gray' | 'CMYK' | 'HSL' | 'HSV' | 'LAB';
+
+/** Level channel options */
+export type LevelChannel = 'All' | 'Red' | 'Green' | 'Blue';
+
+/** Gravity position for canvas extent */
+export type GravityPosition =
+	| 'Center'
+	| 'NorthWest'
+	| 'North'
+	| 'NorthEast'
+	| 'West'
+	| 'East'
+	| 'SouthWest'
+	| 'South'
+	| 'SouthEast';
+
+/** Image effect presets */
+export type EffectPreset =
+	| 'none'
+	| 'grayscale'
+	| 'sepia'
+	| 'charcoal'
+	| 'negate'
+	| 'cannyEdge'
+	| 'oilpaint'
+	| 'solarize'
+	| 'bilateralBlur';
+
+/** Processing settings for the image editor */
+export interface MagickSettings {
+	// Export settings
+	imageFormat: ImageFormat;
+	quality: [number];
+	stripMeta: boolean;
+
+	// Geometry settings
+	resizeW: number | null;
+	resizeH: number | null;
+	rotate: RotationAngle;
+	flop: boolean;
+	flip: boolean;
+	borderColor: string;
+	borderSize: [number];
+	extentW: number | null;
+	extentH: number | null;
+	extentGravity: GravityPosition;
+	extentBgColor: string;
+	deskewThreshold: [number];
+	deskewAutoCrop: boolean;
+
+	// Color adjustment settings
+	brightness: [number];
+	saturation: [number];
+	hue: [number];
+	contrast: [number];
+	normalizeImage: boolean;
+	autoLevel: boolean;
+	autoOrient: boolean;
+	levelBlackpoint: [number];
+	levelWhitepoint: [number];
+	levelGamma: [number];
+	levelChannels: LevelChannel;
+	thresholdPercentage: [number];
+	thresholdChannels: LevelChannel;
+	sigmoidalContrast: [number];
+	sigmoidalMidpoint: [number];
+	sigmoidalChannels: LevelChannel;
+	colorSpace: ColorSpaceOption;
+
+	// Filter & effect settings
+	effect: EffectPreset;
+	blur: [number];
+	sharpen: [number];
+	sepiaThreshold: [number];
+	charcoalIntensity: [number];
+	cannyEdgeStrength: [number];
+	cannyEdgeLower: [number];
+	cannyEdgeUpper: [number];
+	oilpaintRadius: [number];
+	solarizeFactor: [number];
+	bilateralWidth: [number];
+	bilateralHeight: [number];
+	bilateralIntensitySigma: [number];
+	bilateralSpatialSigma: [number];
+}
+
+/** Options applied during image processing (for debug output) */
+export interface AppliedOptions {
+	resize?: { width: number | null; height: number | null };
+	rotate?: number;
+	flop?: boolean;
+	flip?: boolean;
+	border?: { size: number; color: string };
+	extent?: { width: number | null; height: number | null; gravity: string; bg: string };
+	deskew?: { threshold: number; autoCrop: boolean; detectedAngle: number };
+	modulate?: { brightness: number; saturation: number; hue: number };
+	contrast?: number;
+	normalize?: boolean;
+	autoLevel?: boolean;
+	autoOrient?: boolean;
+	level?: { black: number; white: number; gamma: number; channels: string };
+	threshold?: { percent: number; channels: string };
+	sigmoidal?: { contrast: number; midpoint: number };
+	colorSpace?: string;
+	blur?: number;
+	sharpen?: number;
+	effect?: string;
+	sepiaThreshold?: number;
+	cannyEdge?: { strength: number; lower: number; upper: number };
+	oilPaintRadius?: number;
+	solarizeFactor?: number;
+	bilateral?: { w: number; h: number; iSig: number; sSig: number };
+	stripMeta?: boolean;
+	quality?: number;
+	format?: string;
+	outputDimensions?: { width: number; height: number };
+	outputSize?: number;
+	processTime?: string;
+}
