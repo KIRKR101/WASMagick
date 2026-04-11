@@ -9,9 +9,6 @@ bun.lockb
 /.svelte-kit
 /build
 
-# WASM binaries
-*.wasm
-
 # Test outputs
 coverage/
 test-results/
