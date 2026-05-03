@@ -15,6 +15,7 @@
 		wasmLoaded = true,
 		originalWidth = 0,
 		originalHeight = 0,
+		originalFormat = null,
 		processedWidth = 0,
 		processedHeight = 0,
 		processedFormat = null,
@@ -26,6 +27,7 @@
 		wasmLoaded?: boolean;
 		originalWidth?: number;
 		originalHeight?: number;
+		originalFormat?: string | null;
 		processedWidth?: number;
 		processedHeight?: number;
 		processedFormat?: string | null;
@@ -69,7 +71,7 @@
 
 	function setZoom(newZoom: number) {
 		const roundedZoom = Math.floor(newZoom / 10) * 10;
-		currentZoom = Math.max(1, roundedZoom);
+		currentZoom = Math.max(1, Math.min(5000, roundedZoom));
 	}
 
 	export function fitImageToScreen() {
@@ -101,11 +103,14 @@
 	}
 
 	function handleImageLoad() {
-		// Only run fitImageToScreen if we're loading a brand-new image entirely
 		if (loadedOriginalUrl !== originalImageUrl) {
 			loadedOriginalUrl = originalImageUrl;
 			fitImageToScreen();
 		}
+	}
+
+	function handleResize() {
+		if (!showPlaceholder) fitImageToScreen();
 	}
 
 	function onWheel(e: WheelEvent) {
@@ -148,6 +153,47 @@
 		isPanning = false;
 	}
 
+	// Touch support for pinch-to-zoom
+	let lastTouchDistance = $state<number | null>(null);
+
+	function onTouchStart(e: TouchEvent) {
+		if (showPlaceholder || e.touches.length !== 2) return;
+		e.preventDefault();
+		const dx = e.touches[0].clientX - e.touches[1].clientX;
+		const dy = e.touches[0].clientY - e.touches[1].clientY;
+		lastTouchDistance = Math.sqrt(dx * dx + dy * dy);
+	}
+
+	function onTouchMove(e: TouchEvent) {
+		if (showPlaceholder || e.touches.length !== 2 || lastTouchDistance === null) return;
+		e.preventDefault();
+		const dx = e.touches[0].clientX - e.touches[1].clientX;
+		const dy = e.touches[0].clientY - e.touches[1].clientY;
+		const newDistance = Math.sqrt(dx * dx + dy * dy);
+		const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+		const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+		const oldZoom = currentZoom;
+		const scaleFactor = newDistance / lastTouchDistance;
+		let newZoom = oldZoom * scaleFactor;
+		newZoom = Math.max(1, Math.min(5000, Math.floor(newZoom / 10) * 10));
+		if (newZoom !== oldZoom && viewportRef) {
+			const viewportRect = viewportRef.getBoundingClientRect();
+			const Px = centerX - (viewportRect.left + viewportRect.width / 2);
+			const Py = centerY - (viewportRect.top + viewportRect.height / 2);
+			const r = newZoom / oldZoom;
+			imageX = Px * (1 - r) + imageX * r;
+			imageY = Py * (1 - r) + imageY * r;
+			currentZoom = newZoom;
+		}
+		lastTouchDistance = newDistance;
+	}
+
+	function onTouchEnd(e: TouchEvent) {
+		if (e.touches.length < 2) {
+			lastTouchDistance = null;
+		}
+	}
+
 	function handleKeyDown(e: KeyboardEvent) {
 		if (showPlaceholder || !processedImageUrl) return;
 		if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -166,11 +212,9 @@
 	}
 </script>
 
-<svelte:window onkeydown={handleKeyDown} onkeyup={handleKeyUp} />
+<svelte:window onkeydown={handleKeyDown} onkeyup={handleKeyUp} onresize={handleResize} />
 
-<main
-	class="canvas-area relative flex h-full min-h-0 w-full flex-col border-l bg-zinc-100 dark:bg-zinc-900"
->
+<main class="canvas-area relative flex h-full min-h-0 w-full flex-col bg-zinc-200 dark:bg-zinc-900">
 	<div
 		class="toolbar relative z-10 flex h-14 w-full flex-none items-center justify-between border-b bg-background p-4"
 	>
@@ -262,7 +306,10 @@
 		onpointermove={onPointerMove}
 		onpointerup={onPointerUp}
 		onpointerleave={onPointerUp}
-		class="viewport relative flex h-full min-h-0 w-full flex-grow flex-col items-center justify-center overflow-hidden bg-zinc-950"
+		ontouchstart={onTouchStart}
+		ontouchmove={onTouchMove}
+		ontouchend={onTouchEnd}
+		class="viewport relative flex h-full min-h-0 w-full flex-grow flex-col items-center justify-center overflow-hidden bg-zinc-100 dark:bg-zinc-950"
 	>
 		{#if isInitializing}
 			<div class="text-center text-muted-foreground">
@@ -285,27 +332,29 @@
 			</div>
 		{/if}
 
-		<img
-			bind:this={previewImageRef}
-			src={displayedImage}
-			onload={handleImageLoad}
-			style={imageStyle}
-			alt="Preview"
-			draggable="false"
-			class="checkerboard max-h-none max-w-none origin-center object-contain transition-opacity duration-200 ease-out will-change-transform"
-		/>
+		{#if displayedImage && !showPlaceholder}
+			<img
+				bind:this={previewImageRef}
+				src={displayedImage}
+				onload={handleImageLoad}
+				style={imageStyle}
+				alt={isComparing ? 'Original image before processing' : 'Processed image preview'}
+				draggable="false"
+				class="checkerboard max-h-none max-w-none origin-center object-contain transition-opacity duration-200 ease-out will-change-transform"
+			/>
+		{/if}
 
 		{#if isComparing}
 			<div
 				class="absolute top-4 left-4 z-20 rounded-md border bg-background/80 px-3 py-1 text-xs font-medium text-foreground shadow-lg backdrop-blur-sm"
 			>
-				Before · {originalWidth}×{originalHeight}
+				Before · {originalWidth}×{originalHeight} · {originalFormat?.toUpperCase() || ''}
 			</div>
 		{:else if processedImageUrl}
 			<div
 				class="absolute top-4 left-4 z-20 rounded-md border bg-background/80 px-3 py-1 text-xs font-medium text-foreground shadow-lg backdrop-blur-sm"
 			>
-				After · {processedWidth}×{processedHeight}
+				After · {processedWidth}×{processedHeight} · {processedFormat?.toUpperCase() || ''}
 			</div>
 		{/if}
 
@@ -326,14 +375,6 @@
 						>Processing{currentProcessingStep ? `: ${currentProcessingStep}` : '...'}</span
 					>
 				</div>
-			</div>
-		{/if}
-
-		{#if !showPlaceholder && processedImageUrl}
-			<div
-				class="absolute right-4 bottom-4 z-20 rounded-md border bg-background/80 px-3 py-1.5 font-mono text-xs text-muted-foreground shadow-lg backdrop-blur-sm"
-			>
-				{processedWidth}×{processedHeight} · {processedFormat?.toUpperCase() || ''}
 			</div>
 		{/if}
 	</div>

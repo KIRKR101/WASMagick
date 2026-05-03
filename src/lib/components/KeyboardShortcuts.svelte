@@ -9,7 +9,7 @@
 			items: [
 				{ keys: ['Ctrl', 'Enter'], description: 'Process Image' },
 				{ keys: ['Ctrl', 'S'], description: 'Download Result' },
-				{ keys: ['Ctrl', '?'], description: 'Show Shortcuts' }
+				{ keys: ['Ctrl', 'Shift', '?'], description: 'Show Shortcuts' }
 			]
 		},
 		{
@@ -37,6 +37,18 @@
 		}
 	];
 
+	let previousActiveElement: HTMLElement | null = null;
+
+	$effect(() => {
+		if (open) {
+			previousActiveElement = document.activeElement as HTMLElement;
+			document.body.style.overflow = 'hidden';
+		} else {
+			document.body.style.overflow = '';
+			previousActiveElement?.focus();
+		}
+	});
+
 	function handleOverlayClick() {
 		open = false;
 	}
@@ -44,12 +56,26 @@
 	function handleOverlayKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape') {
 			open = false;
+			return;
+		}
+		if (e.key === 'Tab') {
+			const focusable = (e.currentTarget as HTMLElement).querySelectorAll(
+				'button, [href], [tabindex]:not([tabindex="-1"])'
+			);
+			const first = focusable[0] as HTMLElement;
+			const last = focusable[focusable.length - 1] as HTMLElement;
+			if (e.shiftKey && document.activeElement === first) {
+				e.preventDefault();
+				last?.focus();
+			} else if (!e.shiftKey && document.activeElement === last) {
+				e.preventDefault();
+				first?.focus();
+			}
 		}
 	}
 </script>
 
 {#if open}
-	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
 	<div
 		class="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
 		onclick={handleOverlayClick}
@@ -59,8 +85,11 @@
 		aria-labelledby="shortcuts-title"
 		tabindex="-1"
 	>
+		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 		<div
 			class="w-full max-w-lg animate-in rounded-lg border bg-background p-6 shadow-lg fade-in-0 zoom-in-95"
+			onclick={(e) => e.stopPropagation()}
+			tabindex="-1"
 		>
 			<div class="mb-2 flex items-center gap-2">
 				<Command class="h-5 w-5" />
@@ -71,38 +100,34 @@
 			</p>
 
 			<div class="max-h-[60vh] space-y-6 overflow-y-auto">
-				{#each shortcuts as section, index}
-					{#key index}
-						<div class="space-y-3">
-							<h3 class="text-sm font-semibold text-foreground">{section.category}</h3>
-							<div class="space-y-2">
-								{#each section.items as shortcut, sindex}
-									{#key sindex}
-										<div class="flex items-center justify-between text-sm">
-											<span class="text-muted-foreground">{shortcut.description}</span>
-											<div class="flex items-center gap-1">
-												{#each shortcut.keys as key, kindex}
-													{#key kindex}
-														<kbd class="rounded border bg-muted px-2 py-1 font-mono text-xs">
-															{key}
-														</kbd>
-													{/key}
-													{#if kindex < shortcut.keys.length - 1}
-														<span class="text-xs text-muted-foreground">+</span>
-													{/if}
-												{/each}
-											</div>
-										</div>
-									{/key}
-								{/each}
-							</div>
+				{#each shortcuts as section}
+					<div class="space-y-3">
+						<h3 class="text-sm font-semibold text-foreground">{section.category}</h3>
+						<div class="space-y-2">
+							{#each section.items as shortcut}
+								<div class="flex items-center justify-between text-sm">
+									<span class="text-muted-foreground">{shortcut.description}</span>
+									<div class="flex items-center gap-1">
+										{#each shortcut.keys as key, kindex}
+											<kbd
+												class="rounded-sm border bg-muted px-2 py-0.5 font-mono text-xs font-semibold"
+											>
+												{key}
+											</kbd>
+											{#if kindex < shortcut.keys.length - 1}
+												<span class="text-xs text-muted-foreground">+</span>
+											{/if}
+										{/each}
+									</div>
+								</div>
+							{/each}
 						</div>
-					{/key}
+					</div>
 				{/each}
 			</div>
 
 			<button
-				class="absolute top-4 right-4 rounded-sm opacity-70 hover:opacity-100 focus:outline-none"
+				class="absolute top-4 right-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:outline-none"
 				onclick={() => (open = false)}
 				aria-label="Close"
 			>

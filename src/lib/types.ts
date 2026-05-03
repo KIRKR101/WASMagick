@@ -104,8 +104,13 @@ export interface AppliedOptions {
 	flop?: boolean;
 	flip?: boolean;
 	border?: { size: number; color: string };
-	extent?: { width: number | null; height: number | null; gravity: string; bg: string };
-	deskew?: { threshold: number; autoCrop: boolean; detectedAngle: number };
+	extent?: {
+		width: number | null;
+		height: number | null;
+		gravity: string;
+		bg: string;
+	};
+	deskew?: { threshold: number; autoCrop: boolean };
 	modulate?: { brightness: number; saturation: number; hue: number };
 	contrast?: number;
 	normalize?: boolean;
@@ -119,6 +124,7 @@ export interface AppliedOptions {
 	sharpen?: number;
 	effect?: string;
 	sepiaThreshold?: number;
+	charcoalIntensity?: number;
 	cannyEdge?: { strength: number; lower: number; upper: number };
 	oilPaintRadius?: number;
 	solarizeFactor?: number;

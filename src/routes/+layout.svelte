@@ -6,4 +6,5 @@
 </script>
 
 <Toaster />
+<div aria-live="polite" aria-atomic="true" class="sr-only">Image editor ready</div>
 {@render children()}

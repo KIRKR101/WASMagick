@@ -3,6 +3,7 @@
 	import { UploadCloud, Settings2, X } from 'lucide-svelte';
 	import EditorSidebar from '$lib/components/EditorSidebar.svelte';
 	import ImageViewport from '$lib/components/ImageViewport.svelte';
+	import KeyboardShortcuts from '$lib/components/KeyboardShortcuts.svelte';
 	import { useMagick } from '$lib/useMagick.svelte';
 
 	const magick = useMagick();
@@ -10,6 +11,7 @@
 	let isDarkMode = $state(false);
 	let globalDragging = $state(false);
 	let sidebarOpen = $state(false);
+	let showShortcuts = $state(false);
 
 	let viewport = $state<ReturnType<typeof ImageViewport> | null>(null);
 	let activeSection = $state<'geometry' | 'color' | 'filters' | 'export'>('geometry');
@@ -63,6 +65,9 @@
 		} else if (e.altKey && e.key === '4') {
 			e.preventDefault();
 			handleToggleSection('filters');
+		} else if (cmdOrCtrl && e.shiftKey && (e.key === '?' || e.key === '/')) {
+			e.preventDefault();
+			showShortcuts = !showShortcuts;
 		}
 	}
 
@@ -111,7 +116,7 @@
 />
 
 <div
-	class="app-layout grid max-h-screen min-h-screen w-full grid-cols-1 overflow-hidden md:grid-cols-[400px_1fr] dark:bg-zinc-950"
+	class="app-layout grid max-h-screen min-h-screen w-full grid-cols-1 overflow-hidden md:grid-cols-[var(--sidebar-width)_1fr] dark:bg-zinc-950"
 >
 	{#if !sidebarOpen}
 		<button
@@ -138,7 +143,7 @@
 	{/if}
 
 	<div
-		class="fixed inset-y-0 left-0 z-40 w-[400px] transform bg-background transition-transform duration-200 md:relative md:translate-x-0 {sidebarOpen
+		class="fixed inset-y-0 left-0 z-40 w-[var(--sidebar-width)] transform bg-background transition-transform duration-200 md:relative md:translate-x-0 {sidebarOpen
 			? 'translate-x-0'
 			: '-translate-x-full'} md:block"
 	>
@@ -151,6 +156,7 @@
 			onToggleTheme={toggleDarkMode}
 			onFileChanged={() => setTimeout(() => viewport?.fitImageToScreen(), 100)}
 			bind:activeSection
+			bind:showShortcuts
 		/>
 		<button
 			class="absolute top-2 right-2 rounded-md border bg-background/80 p-1 shadow-lg backdrop-blur-sm md:hidden"
@@ -177,6 +183,7 @@
 		wasmLoaded={magick.wasmLoaded}
 		originalWidth={magick.originalWidth}
 		originalHeight={magick.originalHeight}
+		originalFormat={magick.originalImageFormat}
 		processedWidth={magick.processedWidth}
 		processedHeight={magick.processedHeight}
 		processedFormat={magick.processedImageFormat}
@@ -184,11 +191,13 @@
 	/>
 </div>
 
+<KeyboardShortcuts bind:open={showShortcuts} />
+
 <style>
 	/* Custom Scrollbar */
 	:global(.custom-scrollbar) {
 		scrollbar-width: thin;
-		scrollbar-color: hsl(var(--muted-foreground) / 0.2) transparent;
+		scrollbar-color: oklch(var(--muted-foreground) / 0.2) transparent;
 	}
 
 	:global(.custom-scrollbar::-webkit-scrollbar) {
@@ -198,17 +207,17 @@
 		background: transparent;
 	}
 	:global(.custom-scrollbar::-webkit-scrollbar-thumb) {
-		background: oklch(0.8 0 0);
+		background: oklch(var(--muted-foreground) / 0.3);
 		border-radius: 99px;
 	}
 	:global(.dark .custom-scrollbar::-webkit-scrollbar-thumb) {
-		background: oklch(0.25 0 0);
+		background: oklch(var(--muted-foreground) / 0.25);
 	}
 	:global(.custom-scrollbar::-webkit-scrollbar-thumb:hover) {
-		background: oklch(0.7 0 0);
+		background: oklch(var(--muted-foreground) / 0.4);
 	}
 	:global(.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover) {
-		background: oklch(0.35 0 0);
+		background: oklch(var(--muted-foreground) / 0.35);
 	}
 
 	/* Image Checkerboard Pattern */
