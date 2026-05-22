@@ -71,7 +71,7 @@
 
 	function setZoom(newZoom: number) {
 		const roundedZoom = Math.floor(newZoom / 10) * 10;
-		currentZoom = Math.max(1, Math.min(5000, roundedZoom));
+		currentZoom = Math.max(10, Math.min(5000, roundedZoom));
 	}
 
 	export function fitImageToScreen() {
@@ -118,7 +118,7 @@
 		e.preventDefault();
 		const oldZoom = currentZoom;
 		let newZoom = oldZoom + (e.deltaY > 0 ? -zoomStep : zoomStep);
-		newZoom = Math.max(1, Math.floor(newZoom / 10) * 10);
+		newZoom = Math.max(10, Math.floor(newZoom / 10) * 10);
 		if (newZoom === oldZoom) return;
 		if (!viewportRef) return;
 		const viewportRect = viewportRef.getBoundingClientRect();
@@ -175,7 +175,7 @@
 		const oldZoom = currentZoom;
 		const scaleFactor = newDistance / lastTouchDistance;
 		let newZoom = oldZoom * scaleFactor;
-		newZoom = Math.max(1, Math.min(5000, Math.floor(newZoom / 10) * 10));
+		newZoom = Math.max(10, Math.min(5000, Math.floor(newZoom / 10) * 10));
 		if (newZoom !== oldZoom && viewportRef) {
 			const viewportRect = viewportRef.getBoundingClientRect();
 			const Px = centerX - (viewportRect.left + viewportRect.width / 2);
