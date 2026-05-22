@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { UploadCloud, Settings2, X } from 'lucide-svelte';
 	import EditorSidebar from '$lib/components/EditorSidebar.svelte';
 	import ImageViewport from '$lib/components/ImageViewport.svelte';
@@ -32,15 +32,26 @@
 		editorSidebarRef?.toggleSection(_section);
 	}
 
+	function processCurrent() {
+		if (!magick.sourceBytes) return;
+		magick.processImage(debugMode, () => {
+			if (viewport) viewport.fitImageToScreen();
+		});
+	}
+
 	function handleKeydown(e: KeyboardEvent) {
+		if (
+			e.target instanceof HTMLInputElement ||
+			e.target instanceof HTMLTextAreaElement ||
+			e.target instanceof HTMLSelectElement
+		)
+			return;
+
 		const cmdOrCtrl = e.ctrlKey || e.metaKey;
+
 		if (cmdOrCtrl && e.key === 'Enter') {
 			e.preventDefault();
-			if (magick.sourceBytes) {
-				magick.processImage(debugMode, () => {
-					if (viewport) viewport.fitImageToScreen();
-				});
-			}
+			processCurrent();
 		} else if (cmdOrCtrl && (e.key === 's' || e.key === 'S')) {
 			e.preventDefault();
 			magick.downloadImage();
@@ -82,6 +93,20 @@
 		}
 	}
 
+	// Auto-process: re-process when settings change and autoProcess is on
+	let prevSettingsSnap = $state<string | null>(null);
+
+	$effect(() => {
+		if (!magick.autoProcess || !magick.sourceBytes) return;
+		const snap = JSON.stringify(magick.settings);
+		if (snap === prevSettingsSnap) return;
+		prevSettingsSnap = snap;
+		if (untrack(() => magick.isLoading)) return;
+		magick.debouncedProcess(debugMode, () => {
+			if (viewport) viewport.fitImageToScreen();
+		});
+	});
+
 	onMount(async () => {
 		if (
 			localStorage.getItem('theme') === 'dark' ||
@@ -94,6 +119,7 @@
 			isDarkMode = false;
 		}
 
+		magick.initWorker();
 		await magick.initWasm(debugMode);
 	});
 </script>
@@ -157,6 +183,7 @@
 			onFileChanged={() => setTimeout(() => viewport?.fitImageToScreen(), 100)}
 			bind:activeSection
 			bind:showShortcuts
+			{processCurrent}
 		/>
 		<button
 			class="absolute top-2 right-2 rounded-md border bg-background/80 p-1 shadow-lg backdrop-blur-sm md:hidden"
@@ -192,67 +219,3 @@
 </div>
 
 <KeyboardShortcuts bind:open={showShortcuts} />
-
-<style>
-	/* Custom Scrollbar */
-	:global(.custom-scrollbar) {
-		scrollbar-width: thin;
-		scrollbar-color: oklch(var(--muted-foreground) / 0.2) transparent;
-	}
-
-	:global(.custom-scrollbar::-webkit-scrollbar) {
-		width: 6px;
-	}
-	:global(.custom-scrollbar::-webkit-scrollbar-track) {
-		background: transparent;
-	}
-	:global(.custom-scrollbar::-webkit-scrollbar-thumb) {
-		background: oklch(var(--muted-foreground) / 0.3);
-		border-radius: 99px;
-	}
-	:global(.dark .custom-scrollbar::-webkit-scrollbar-thumb) {
-		background: oklch(var(--muted-foreground) / 0.25);
-	}
-	:global(.custom-scrollbar::-webkit-scrollbar-thumb:hover) {
-		background: oklch(var(--muted-foreground) / 0.4);
-	}
-	:global(.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover) {
-		background: oklch(var(--muted-foreground) / 0.35);
-	}
-
-	/* Image Checkerboard Pattern */
-	:global(.checkerboard) {
-		background-color: #f4f4f5;
-		background-image:
-			linear-gradient(45deg, #e4e4e7 25%, transparent 25%),
-			linear-gradient(-45deg, #e4e4e7 25%, transparent 25%),
-			linear-gradient(45deg, transparent 75%, #e4e4e7 75%),
-			linear-gradient(-45deg, transparent 75%, #e4e4e7 75%);
-		background-size: 20px 20px;
-		background-position:
-			0 0,
-			0 10px,
-			10px -10px,
-			-10px 0px;
-	}
-	:global(.dark .checkerboard) {
-		background-color: #18181b;
-		background-image:
-			linear-gradient(45deg, #27272a 25%, transparent 25%),
-			linear-gradient(-45deg, #27272a 25%, transparent 25%),
-			linear-gradient(45deg, transparent 75%, #27272a 75%),
-			linear-gradient(-45deg, transparent 75%, #27272a 75%);
-	}
-
-	/* Hide Spinners on Input[type=number] */
-	:global(input.no-spinner::-webkit-outer-spin-button),
-	:global(input.no-spinner::-webkit-inner-spin-button),
-	:global(input[type='number']::-webkit-outer-spin-button),
-	:global(input[type='number']::-webkit-inner-spin-button) {
-		-webkit-appearance: none;
-		margin: 0;
-	}
-	:global(input[type='number']) {
-		-moz-appearance: textfield;
-	}
-</style>

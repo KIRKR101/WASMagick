@@ -7,7 +7,17 @@
 		TooltipProvider,
 		TooltipTrigger
 	} from '$lib/components/ui/tooltip/index.js';
-	import { Moon, Sun, Bug, Download, RotateCw, AlertCircle, Keyboard } from 'lucide-svelte';
+	import { Switch } from '$lib/components/ui/switch/index.js';
+	import {
+		Moon,
+		Sun,
+		Bug,
+		Download,
+		RotateCw,
+		AlertCircle,
+		Keyboard,
+		Zap
+	} from 'lucide-svelte';
 	import type { MagickState } from '$lib/useMagick.svelte';
 	import EditorSidebarFileUpload from './EditorSidebarFileUpload.svelte';
 	import EditorSidebarExport from './EditorSidebarExport.svelte';
@@ -22,6 +32,7 @@
 		onToggleDebug,
 		onToggleTheme,
 		onFileChanged,
+		processCurrent,
 		activeSection = $bindable('geometry'),
 		showShortcuts = $bindable(false)
 	} = $props<{
@@ -31,7 +42,7 @@
 		onToggleDebug: () => void;
 		onToggleTheme: () => void;
 		onFileChanged: () => void;
-		onToggleSection?: (section: 'geometry' | 'color' | 'filters' | 'export') => void;
+		processCurrent: () => void;
 		activeSection?: 'geometry' | 'color' | 'filters' | 'export';
 		showShortcuts?: boolean;
 	}>();
@@ -123,6 +134,30 @@
 	<div class="scroll-container custom-scrollbar flex-grow overflow-y-auto">
 		<EditorSidebarFileUpload {magick} {onFileChanged} />
 
+		<div class="flex items-center justify-end border-b px-4 py-1.5">
+			<TooltipProvider>
+				<Tooltip>
+					<TooltipTrigger>
+						<label
+							for="auto-process"
+							class="flex cursor-pointer items-center gap-1.5 rounded-xs px-1.5 py-0.5 transition-colors hover:bg-muted/50"
+						>
+							<Zap
+								class="h-3 w-3 {magick.autoProcess ? 'text-primary' : 'text-muted-foreground'}"
+							/>
+							<span class="text-[10px] text-muted-foreground">Auto</span>
+							<Switch
+								id="auto-process"
+								bind:checked={magick.autoProcess}
+								class="pointer-events-none scale-75"
+							/>
+						</label>
+					</TooltipTrigger>
+					<TooltipContent><p>Auto-process when settings change</p></TooltipContent>
+				</Tooltip>
+			</TooltipProvider>
+		</div>
+
 		<Accordion class="w-full" type="multiple" bind:value={activeAccordions} loop>
 			<EditorSidebarExport {magick} />
 			<EditorSidebarGeometry {magick} />
@@ -143,7 +178,7 @@
 				</Button>
 			{:else}
 				<Button
-					onclick={() => magick.processImage(debugMode, () => onFileChanged())}
+					onclick={processCurrent}
 					disabled={!magick.wasmLoaded || magick.isLoading}
 					variant="secondary"
 					class="h-11 flex-1 cursor-pointer font-bold tracking-wider uppercase shadow-md transition-shadow duration-50 hover:shadow-lg disabled:opacity-70"

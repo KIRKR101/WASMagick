@@ -1,0 +1,232 @@
+import {
+	ImageMagick,
+	MagickFormat,
+	MagickColor,
+	Percentage,
+	Gravity,
+	Channels,
+	ColorSpace
+} from '@imagemagick/magick-wasm';
+import type { MagickSettings } from './types';
+
+const FORMAT_MAP: Record<string, keyof typeof MagickFormat> = {
+	WEBP: 'WebP',
+	JPEG: 'Jpeg',
+	PNG: 'Png',
+	AVIF: 'Avif',
+	JXL: 'Jxl',
+	TIFF: 'Tiff',
+	GIF: 'Gif'
+};
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+	let r = 0,
+		g = 0,
+		b = 0;
+	if (hex.startsWith('#')) hex = hex.slice(1);
+	const isValid = /^[0-9a-fA-F]+$/.test(hex) && (hex.length === 3 || hex.length === 6);
+	if (!isValid) return { r, g, b };
+	if (hex.length === 3) {
+		r = parseInt(hex[0] + hex[0], 16);
+		g = parseInt(hex[1] + hex[1], 16);
+		b = parseInt(hex[2] + hex[2], 16);
+	} else if (hex.length === 6) {
+		r = parseInt(hex.substring(0, 2), 16);
+		g = parseInt(hex.substring(2, 4), 16);
+		b = parseInt(hex.substring(4, 6), 16);
+	}
+	return { r, g, b };
+}
+
+export interface ProcessResult {
+	data: Uint8Array;
+	width: number;
+	height: number;
+	format: string;
+}
+
+export function processImageSync(sourceBytes: Uint8Array, settings: MagickSettings): ProcessResult {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	let result: ProcessResult = { data: new Uint8Array(), width: 0, height: 0, format: '' };
+
+	ImageMagick.read(sourceBytes, (image) => {
+		const resizeW = settings.resizeW ?? 0;
+		const resizeH = settings.resizeH ?? 0;
+
+		if (resizeW > 0 || resizeH > 0) {
+			image.resize(resizeW, resizeH);
+		}
+
+		if (parseInt(settings.rotate) !== 0) {
+			image.rotate(parseInt(settings.rotate));
+		}
+
+		if (settings.flop) image.flop();
+		if (settings.flip) image.flip();
+
+		if (settings.borderSize[0] > 0) {
+			const { r, g, b } = hexToRgb(settings.borderColor);
+			image.borderColor = new MagickColor(r, g, b);
+			image.border(settings.borderSize[0]);
+		}
+
+		if ((settings.extentW ?? 0) > 0 || (settings.extentH ?? 0) > 0) {
+			const { r, g, b } = hexToRgb(settings.extentBgColor);
+			image.backgroundColor = new MagickColor(r, g, b);
+			const gravityKey = settings.extentGravity as keyof typeof Gravity;
+			image.extent(
+				settings.extentW ?? image.width,
+				settings.extentH ?? image.height,
+				Gravity[gravityKey]
+			);
+		}
+
+		if (settings.deskewThreshold[0] > 0) {
+			image.deskew(new Percentage(settings.deskewThreshold[0]), settings.deskewAutoCrop);
+		}
+
+		if (
+			settings.brightness[0] !== 100 ||
+			settings.saturation[0] !== 100 ||
+			settings.hue[0] !== 100
+		) {
+			image.modulate(
+				new Percentage(settings.brightness[0]),
+				new Percentage(settings.saturation[0]),
+				new Percentage(settings.hue[0])
+			);
+		}
+
+		if (settings.contrast[0] !== 0) {
+			image.brightnessContrast(new Percentage(0), new Percentage(settings.contrast[0]));
+		}
+
+		if (settings.normalizeImage) image.normalize();
+		if (settings.autoLevel) image.autoLevel();
+		if (settings.autoOrient) image.autoOrient();
+
+		if (
+			settings.levelBlackpoint[0] !== 0 ||
+			settings.levelWhitepoint[0] !== 100 ||
+			settings.levelGamma[0] !== 1.0
+		) {
+			const channels =
+				settings.levelChannels === 'All'
+					? Channels.All
+					: Channels[settings.levelChannels as keyof typeof Channels];
+			image.level(
+				new Percentage(settings.levelBlackpoint[0]),
+				new Percentage(settings.levelWhitepoint[0]),
+				settings.levelGamma[0],
+				channels as Channels
+			);
+		}
+
+		if (settings.thresholdPercentage[0] !== 50) {
+			const thresholdChannels =
+				settings.thresholdChannels === 'All'
+					? Channels.All
+					: Channels[settings.thresholdChannels as keyof typeof Channels];
+			image.threshold(
+				new Percentage(settings.thresholdPercentage[0]),
+				thresholdChannels as Channels
+			);
+		}
+
+		if (settings.sigmoidalContrast[0] !== 0) {
+			const sigmoidalChannels =
+				settings.sigmoidalChannels === 'All'
+					? Channels.All
+					: Channels[settings.sigmoidalChannels as keyof typeof Channels];
+			image.sigmoidalContrast(
+				settings.sigmoidalContrast[0],
+				settings.sigmoidalMidpoint[0],
+				sigmoidalChannels as Channels
+			);
+		}
+
+		if (settings.colorSpace !== 'RGB') {
+			const colorSpaceKey = settings.colorSpace as keyof typeof ColorSpace;
+			image.colorSpace = ColorSpace[colorSpaceKey];
+		}
+
+		if (settings.blur[0] > 0) {
+			image.blur(settings.blur[0], settings.blur[0] / 2);
+		}
+
+		if (settings.sharpen[0] > 0) {
+			const radius = settings.sharpen[0];
+			image.sharpen(radius, radius / 2);
+		}
+
+		if (settings.effect !== 'none') {
+			switch (settings.effect) {
+				case 'grayscale':
+					image.grayscale();
+					break;
+				case 'sepia':
+					image.sepiaTone(new Percentage(settings.sepiaThreshold[0]));
+					break;
+				case 'charcoal': {
+					const charcoalRadius = settings.charcoalIntensity[0];
+					if (charcoalRadius > 0) {
+						image.charcoal(charcoalRadius, charcoalRadius / 2);
+					} else {
+						image.charcoal();
+					}
+					break;
+				}
+				case 'negate':
+					image.negate();
+					break;
+				case 'cannyEdge': {
+					const radius = (settings.cannyEdgeStrength[0] / 100) * 4;
+					const sigma = (settings.cannyEdgeStrength[0] / 100) * 1.5;
+					image.cannyEdge(
+						radius,
+						sigma,
+						new Percentage(settings.cannyEdgeLower[0]),
+						new Percentage(settings.cannyEdgeUpper[0])
+					);
+					break;
+				}
+				case 'oilpaint':
+					image.oilPaint(settings.oilpaintRadius[0]);
+					break;
+				case 'solarize':
+					image.solarize(new Percentage(settings.solarizeFactor[0]));
+					break;
+				case 'bilateralBlur':
+					image.bilateralBlur(
+						settings.bilateralWidth[0],
+						settings.bilateralHeight[0],
+						settings.bilateralIntensitySigma[0],
+						settings.bilateralSpatialSigma[0]
+					);
+					break;
+			}
+		}
+
+		if (settings.stripMeta) {
+			image.strip();
+		}
+
+		const formatKey = settings.imageFormat.toUpperCase();
+		const magf = FORMAT_MAP[formatKey] || 'WebP';
+		image.quality = settings.quality[0];
+
+		const finalWidth = image.width;
+		const finalHeight = image.height;
+
+		image.write(MagickFormat[magf], (data) => {
+			result = {
+				data: new Uint8Array(data),
+				width: finalWidth,
+				height: finalHeight,
+				format: settings.imageFormat
+			};
+		});
+	});
+
+	return result;
+}

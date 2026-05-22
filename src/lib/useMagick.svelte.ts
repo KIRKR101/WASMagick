@@ -23,6 +23,8 @@ import {
 import { toast } from 'svelte-sonner';
 import type { MagickSettings, AppliedOptions } from './types';
 
+const AUTO_PROCESS_DELAY = 300;
+
 const DEFAULT_SETTINGS: MagickSettings = {
 	imageFormat: 'WebP',
 	quality: [85],
@@ -95,6 +97,121 @@ const FORMAT_MAP: Record<string, keyof typeof MagickFormat> = {
 	GIF: 'Gif'
 };
 
+function snapSettings(settings: MagickSettings): MagickSettings {
+	return JSON.parse(JSON.stringify(settings));
+}
+
+function readUint16BE(bytes: Uint8Array, offset: number): number {
+	return (bytes[offset] << 8) | bytes[offset + 1];
+}
+
+function readUint16LE(bytes: Uint8Array, offset: number): number {
+	return bytes[offset] | (bytes[offset + 1] << 8);
+}
+
+function readUint32BE(bytes: Uint8Array, offset: number): number {
+	return (
+		(bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3]
+	);
+}
+
+function readUint32LE(bytes: Uint8Array, offset: number): number {
+	return (
+		bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24)
+	);
+}
+
+function fastImageDimensions(bytes: Uint8Array): { width: number; height: number } | null {
+	if (bytes.length < 16) return null;
+
+	// JPEG: find SOF marker (0xFF 0xC0 or 0xFF 0xC2)
+	if (bytes[0] === 0xff && bytes[1] === 0xd8) {
+		let offset = 2;
+		while (offset < bytes.length - 9) {
+			if (bytes[offset] !== 0xff) return null;
+			const marker = bytes[offset + 1];
+			offset += 2;
+			if (marker === 0xc0 || marker === 0xc2) {
+				return {
+					height: readUint16BE(bytes, offset + 3),
+					width: readUint16BE(bytes, offset + 5)
+				};
+			}
+			const segLen = readUint16BE(bytes, offset);
+			offset += segLen;
+		}
+		return null;
+	}
+
+	// PNG: 8-byte signature, IHDR at offset 8
+	if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
+		return {
+			width: readUint32BE(bytes, 16),
+			height: readUint32BE(bytes, 20)
+		};
+	}
+
+	// GIF: "GIF89a" or "GIF87a"
+	if (
+		bytes[0] === 0x47 &&
+		bytes[1] === 0x49 &&
+		bytes[2] === 0x46 &&
+		bytes[3] === 0x38 &&
+		(bytes[4] === 0x37 || bytes[4] === 0x39) &&
+		bytes[5] === 0x61
+	) {
+		return {
+			width: readUint16LE(bytes, 6),
+			height: readUint16LE(bytes, 8)
+		};
+	}
+
+	// WebP: RIFF container
+	if (
+		bytes[0] === 0x52 &&
+		bytes[1] === 0x49 &&
+		bytes[2] === 0x46 &&
+		bytes[3] === 0x46 &&
+		bytes[8] === 0x57 &&
+		bytes[9] === 0x45 &&
+		bytes[10] === 0x42 &&
+		bytes[11] === 0x50
+	) {
+		if (bytes[12] === 0x56 && bytes[13] === 0x50 && bytes[14] === 0x38 && bytes[15] === 0x20) {
+			return {
+				width: readUint16LE(bytes, 26) & 0x3fff,
+				height: readUint16LE(bytes, 28) & 0x3fff
+			};
+		}
+		if (bytes[12] === 0x56 && bytes[13] === 0x50 && bytes[14] === 0x38 && bytes[15] === 0x4c) {
+			const b0 = bytes[21],
+				b1 = bytes[22],
+				b2 = bytes[23],
+				b3 = bytes[24];
+			return {
+				width: ((b1 & 0x3f) << 8) | b0,
+				height: ((b3 & 0x0f) << 10) | (b2 << 2) | ((b1 & 0xc0) >> 6)
+			};
+		}
+		if (bytes[12] === 0x56 && bytes[13] === 0x50 && bytes[14] === 0x38 && bytes[15] === 0x58) {
+			return {
+				width: (readUint32LE(bytes, 24) & 0xffffff) + 1,
+				height: (readUint32LE(bytes, 27) & 0xffffff) + 1
+			};
+		}
+	}
+
+	// BMP
+	if (bytes[0] === 0x42 && bytes[1] === 0x4d) {
+		return {
+			width: readUint32LE(bytes, 18),
+			height: Math.abs(readUint32LE(bytes, 22))
+		};
+	}
+
+	return null;
+}
+
 export class MagickState {
 	wasmLoaded = $state(false);
 	isLoading = $state(false);
@@ -115,6 +232,16 @@ export class MagickState {
 	processedHeight = $state(0);
 	currentProcessingStep = $state<string | null>(null);
 	settings = $state<MagickSettings>({ ...DEFAULT_SETTINGS });
+	autoProcess = $state(false);
+	workerReady = $state(false);
+
+	private _worker: Worker | null = null;
+	private _requestId = 0;
+	private _pendingRequests = new Map<
+		number,
+		{ debugMode: boolean; onComplete?: () => void; startTime: number }
+	>();
+	private _processTimer: ReturnType<typeof setTimeout> | null = null;
 
 	hexToRgb(hex: string): { r: number; g: number; b: number } {
 		let r = 0,
@@ -159,6 +286,67 @@ export class MagickState {
 					'Please refresh the page and try again. If the problem persists, your browser may not support WebAssembly.'
 			});
 			throw e;
+		}
+	}
+
+	initWorker(): void {
+		if (typeof Worker === 'undefined') return;
+		if (this._worker) return;
+
+		try {
+			this._worker = new Worker(new URL('./magick.worker.ts', import.meta.url), {
+				type: 'module'
+			});
+
+			this._worker.onmessage = (e: MessageEvent) => {
+				const { id, result, error } = e.data;
+				const pending = this._pendingRequests.get(id);
+				if (!pending) return;
+				this._pendingRequests.delete(id);
+
+				if (error) {
+					this.hasError = true;
+					this.errorMessage = error;
+					toast.error('Processing Failed', { description: error });
+					this.isLoading = false;
+					return;
+				}
+
+				const { data, width, height, format } = result;
+				const elapsed = Math.round(performance.now() - pending.startTime);
+
+				const appliedOptions: AppliedOptions = {};
+				if (pending.debugMode) {
+					appliedOptions.outputDimensions = { width, height };
+					appliedOptions.outputSize = data.length;
+					appliedOptions.processTime = elapsed + 'ms';
+					console.log('ImageMagickSettings', {
+						...this.settings,
+						...appliedOptions
+					});
+				}
+
+				this.handleDownload(data, format, elapsed, width, height, appliedOptions);
+
+				if (pending.onComplete) pending.onComplete();
+			};
+
+			this._worker.onerror = (err) => {
+				console.error('Worker error:', err);
+				this._worker?.terminate();
+				this._worker = null;
+				this.workerReady = false;
+				for (const [, pending] of this._pendingRequests) {
+					this.hasError = true;
+					this.errorMessage = 'Worker crashed';
+					this.isLoading = false;
+				}
+				this._pendingRequests.clear();
+			};
+
+			this.workerReady = true;
+		} catch (err) {
+			console.warn('Could not initialize Web Worker. Falling back to main thread.', err);
 		}
 	}
 
@@ -250,6 +438,13 @@ export class MagickState {
 		this.resetFilters();
 	}
 
+	debouncedProcess(debugMode = false, onComplete?: () => void): void {
+		if (this._processTimer) clearTimeout(this._processTimer);
+		this._processTimer = setTimeout(() => {
+			this.processImage(debugMode, onComplete);
+		}, AUTO_PROCESS_DELAY);
+	}
+
 	async setSourceFile(file: File): Promise<boolean> {
 		this.hasError = false;
 		this.errorMessage = null;
@@ -262,10 +457,10 @@ export class MagickState {
 
 		this.originalName = file.name;
 
-		let format = file.type ? file.type.split('/')[1] : null;
+		let format: string | null = file.type ? file.type.split('/')[1] : null;
 		if (!format) {
 			const nameParts = file.name.split('.');
-			format = nameParts.length > 1 ? nameParts.pop() : null;
+			format = nameParts.length > 1 ? (nameParts.pop() ?? null) : null;
 		}
 		this.originalImageFormat = format ? format.toLowerCase() : null;
 
@@ -274,10 +469,16 @@ export class MagickState {
 			this.sourceBytes = new Uint8Array(buffer);
 			this.originalImageSize = this.sourceBytes.length;
 
-			await this.getImageDimensions(this.sourceBytes).then((dims) => {
-				this.originalWidth = dims.width;
-				this.originalHeight = dims.height;
-			});
+			const fastDims = fastImageDimensions(this.sourceBytes);
+			if (fastDims) {
+				this.originalWidth = fastDims.width;
+				this.originalHeight = fastDims.height;
+			} else {
+				await this.getImageDimensions(this.sourceBytes).then((dims) => {
+					this.originalWidth = dims.width;
+					this.originalHeight = dims.height;
+				});
+			}
 
 			this.revokeImageUrls();
 			this.originalImageUrl = URL.createObjectURL(
@@ -353,6 +554,29 @@ export class MagickState {
 
 		this.isLoading = true;
 
+		if (this._worker && this.workerReady) {
+			this._processViaWorker(debugMode, onComplete);
+		} else {
+			this._processOnMainThread(debugMode, onComplete);
+		}
+	}
+
+	private _processViaWorker(debugMode = false, onComplete?: () => void): void {
+		this.currentProcessingStep = 'Processing in worker...';
+		const requestId = ++this._requestId;
+		this._pendingRequests.set(requestId, {
+			debugMode,
+			onComplete,
+			startTime: performance.now()
+		});
+		this._worker!.postMessage({
+			id: requestId,
+			sourceBytes: this.sourceBytes,
+			settings: snapSettings(this.settings)
+		});
+	}
+
+	private _processOnMainThread(debugMode = false, onComplete?: () => void): void {
 		requestAnimationFrame(() => {
 			requestAnimationFrame(() => {
 				const startTime = performance.now();
@@ -672,6 +896,8 @@ export class MagickState {
 				} catch (err: unknown) {
 					console.error('Image processing failed:', err);
 					const message = err instanceof Error ? err.message : 'Unknown error';
+					this.hasError = true;
+					this.errorMessage = message;
 					toast.error('Processing Failed', { description: message });
 					this.isLoading = false;
 				}

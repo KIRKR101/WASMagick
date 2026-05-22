@@ -372,7 +372,7 @@
 						></div>
 					</div>
 					<span class="text-sm font-medium text-foreground"
-						>Processing{currentProcessingStep ? `: ${currentProcessingStep}` : '...'}</span
+						>{currentProcessingStep ? `${currentProcessingStep}` : '...'}</span
 					>
 				</div>
 			</div>
