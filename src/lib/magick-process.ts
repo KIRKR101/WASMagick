@@ -46,7 +46,6 @@ export interface ProcessResult {
 }
 
 export function processImageSync(sourceBytes: Uint8Array, settings: MagickSettings): ProcessResult {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	let result: ProcessResult = { data: new Uint8Array(), width: 0, height: 0, format: '' };
 
 	ImageMagick.read(sourceBytes, (image) => {

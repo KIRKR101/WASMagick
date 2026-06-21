@@ -38,6 +38,14 @@
 	--sidebar-border: oklch(0.922 0 0);
 	--sidebar-ring: oklch(0.708 0 0);
 	--sidebar-width: 400px;
+
+	/* Editor layout tokens */
+	--topbar-h: 48px;
+	--statusbar-h: 36px;
+	--rail-w: 56px;
+	--panel-min: 300px;
+	--panel-max: 460px;
+	--panel-default: 340px;
 }
 
 .dark {

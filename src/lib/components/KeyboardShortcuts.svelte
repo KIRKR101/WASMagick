@@ -9,16 +9,21 @@
 			items: [
 				{ keys: ['Ctrl', 'Enter'], description: 'Process Image' },
 				{ keys: ['Ctrl', 'S'], description: 'Download Result' },
+				{ keys: ['Ctrl', 'Z'], description: 'Undo' },
+				{ keys: ['Ctrl', 'Shift', 'Z'], description: 'Redo' },
+				{ keys: ['V'], description: 'Open File Picker' },
 				{ keys: ['Ctrl', 'Shift', '?'], description: 'Show Shortcuts' }
 			]
 		},
 		{
 			category: 'Sections',
 			items: [
-				{ keys: ['Alt', '1'], description: 'Export Section' },
-				{ keys: ['Alt', '2'], description: 'Geometry Section' },
-				{ keys: ['Alt', '3'], description: 'Color Section' },
-				{ keys: ['Alt', '4'], description: 'Filters Section' }
+				{ keys: ['Alt', '1'], description: 'Geometry' },
+				{ keys: ['Alt', '2'], description: 'Color' },
+				{ keys: ['Alt', '3'], description: 'Filters' },
+				{ keys: ['Alt', '4'], description: 'Export' },
+				{ keys: ['Alt', '5'], description: 'Presets' },
+				{ keys: ['Alt', '6'], description: 'History' }
 			]
 		},
 		{
@@ -28,12 +33,14 @@
 				{ keys: ['Ctrl', '='], description: 'Zoom In' },
 				{ keys: ['Ctrl', '-'], description: 'Zoom Out' },
 				{ keys: ['Scroll'], description: 'Zoom In/Out' },
-				{ keys: ['Drag'], description: 'Pan Image' }
+				{ keys: ['Drag'], description: 'Pan Image' },
+				{ keys: ['B'], description: 'Toggle Split Compare' },
+				{ keys: ['Space'], description: 'Hold to Compare (Before/After)' }
 			]
 		},
 		{
-			category: 'Compare',
-			items: [{ keys: ['Space'], description: 'Hold to Compare (Before/After)' }]
+			category: 'Clipboard',
+			items: [{ keys: ['Ctrl', 'V'], description: 'Paste Image from Clipboard' }]
 		}
 	];
 
@@ -49,8 +56,8 @@
 		}
 	});
 
-	function handleOverlayClick() {
-		open = false;
+	function handleOverlayClick(e: MouseEvent) {
+		if (e.target === e.currentTarget) open = false;
 	}
 
 	function handleOverlayKeydown(e: KeyboardEvent) {
@@ -88,7 +95,6 @@
 		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 		<div
 			class="w-full max-w-lg animate-in rounded-lg border bg-background p-6 shadow-lg fade-in-0 zoom-in-95"
-			onclick={(e) => e.stopPropagation()}
 			tabindex="-1"
 		>
 			<div class="mb-2 flex items-center gap-2">

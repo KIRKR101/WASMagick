@@ -25,7 +25,7 @@ import type { MagickSettings, AppliedOptions } from './types';
 
 const AUTO_PROCESS_DELAY = 300;
 
-const DEFAULT_SETTINGS: MagickSettings = {
+export const DEFAULT_SETTINGS: MagickSettings = {
 	imageFormat: 'WebP',
 	quality: [85],
 	stripMeta: true,
@@ -226,17 +226,20 @@ export class MagickState {
 	processedImageUrl = $state<string | null>(null);
 	processedImageFormat = $state<string | null>(null);
 	processedImageName = $state<string | null>(null);
+	processedImageTime = $state(0);
+	processedImageDelta = $state('N/A');
 	originalWidth = $state(0);
 	originalHeight = $state(0);
 	processedWidth = $state(0);
 	processedHeight = $state(0);
 	currentProcessingStep = $state<string | null>(null);
 	settings = $state<MagickSettings>({ ...DEFAULT_SETTINGS });
-	autoProcess = $state(false);
 	workerReady = $state(false);
 
 	private _worker: Worker | null = null;
 	private _requestId = 0;
+	// Non-reactive internal request map (intentionally plain Map).
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity
 	private _pendingRequests = new Map<
 		number,
 		{ debugMode: boolean; onComplete?: () => void; startTime: number }
@@ -294,6 +297,7 @@ export class MagickState {
 		if (this._worker) return;
 
 		try {
+			// eslint-disable-next-line svelte/prefer-svelte-reactivity
 			this._worker = new Worker(new URL('./magick.worker.ts', import.meta.url), {
 				type: 'module'
 			});
@@ -336,7 +340,7 @@ export class MagickState {
 				this._worker?.terminate();
 				this._worker = null;
 				this.workerReady = false;
-				for (const [, pending] of this._pendingRequests) {
+				for (const [, _pending] of this._pendingRequests) {
 					this.hasError = true;
 					this.errorMessage = 'Worker crashed';
 					this.isLoading = false;
@@ -519,12 +523,21 @@ export class MagickState {
 	clearSource(): void {
 		this.sourceBytes = null;
 		this.revokeImageUrls();
+		this.originalName = 'image';
+		this.originalImageSize = 0;
 		this.originalImageUrl = null;
 		this.originalImageFormat = null;
+		this.originalWidth = 0;
+		this.originalHeight = 0;
 		this.processedImageUrl = null;
 		this.processedImageFormat = null;
 		this.processedImageName = null;
+		this.processedImageTime = 0;
+		this.processedImageDelta = 'N/A';
+		this.processedWidth = 0;
+		this.processedHeight = 0;
 		this.statsMessage = 'Ready';
+		this.currentProcessingStep = null;
 	}
 
 	private revokeImageUrls(): void {
@@ -945,6 +958,8 @@ export class MagickState {
 
 		const statsStr = `Processed in ${time}ms, New Size: ${sizeChangeStr}`;
 		this.statsMessage = statsStr;
+		this.processedImageTime = time;
+		this.processedImageDelta = sizeChangeStr;
 
 		toast.success('Image Processed', {
 			description: `${newWidth}×${newHeight} • ${sizeChangeStr}`

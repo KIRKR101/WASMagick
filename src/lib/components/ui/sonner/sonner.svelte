@@ -32,7 +32,7 @@
 <Sonner
 	theme={toastTheme}
 	class="toaster group"
-	style={'--normal-bg: var(--background); --normal-text: var(--foreground); --normal-border: var(--border); --success-bg: var(--background); --success-text: var(--foreground); --error-bg: var(--background); --error-text: var(--foreground); --warning-bg: var(--background); --warning-text: var(--foreground); --info-bg: var(--background); --info-text: var(--foreground);'}
+	style="--normal-bg: var(--background); --normal-text: var(--foreground); --normal-border: var(--border); --success-bg: var(--background); --success-text: var(--foreground); --error-bg: var(--background); --error-text: var(--foreground); --warning-bg: var(--background); --warning-text: var(--foreground); --info-bg: var(--background); --info-text: var(--foreground);"
 	{...restProps}
 	>{#snippet loadingIcon()}
 		<Loader2Icon class="size-4 animate-spin" />

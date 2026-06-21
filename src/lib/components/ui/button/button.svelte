@@ -61,7 +61,6 @@
 </script>
 
 {#if href}
-	<!-- svelte-ignore svelte/no-navigation-without-resolve -->
 	<a
 		bind:this={ref}
 		data-slot="button"
