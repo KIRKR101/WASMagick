@@ -115,15 +115,18 @@
 	}
 
 	function handleImageLoad() {
-		loadedOriginalUrl = displayedImage;
+		if (isComparing) return;
+		loadedOriginalUrl = processedImageUrl;
 		fitImageToScreen();
 	}
 
-	// Re-fit when the displayed image changes (history navigation can swap
+	// Re-fit when the processed image changes (history navigation can swap
 	// the <img src> to a cached copy, in which case onload may not refire
 	// and the previous fit would be stale for the new dimensions).
+	// Only refit for the processed image — toggling between processed and
+	// original for hold-to-compare must not reset zoom/pan.
 	$effect(() => {
-		const url = displayedImage;
+		const url = processedImageUrl;
 		if (!url) return;
 		if (loadedOriginalUrl === url) return;
 		let frame = 0;
