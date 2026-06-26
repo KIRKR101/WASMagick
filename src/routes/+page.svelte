@@ -85,14 +85,20 @@
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
+		const cmdOrCtrl = e.ctrlKey || e.metaKey;
+
+		if (cmdOrCtrl && e.key === 'Enter') {
+			e.preventDefault();
+			processCurrent();
+			return;
+		}
+
 		if (
 			e.target instanceof HTMLInputElement ||
 			e.target instanceof HTMLTextAreaElement ||
 			e.target instanceof HTMLSelectElement
 		)
 			return;
-
-		const cmdOrCtrl = e.ctrlKey || e.metaKey;
 
 		// Undo / Redo
 		if (cmdOrCtrl && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
@@ -106,10 +112,7 @@
 			return;
 		}
 
-		if (cmdOrCtrl && e.key === 'Enter') {
-			e.preventDefault();
-			processCurrent();
-		} else if (cmdOrCtrl && (e.key === 's' || e.key === 'S')) {
+		if (cmdOrCtrl && (e.key === 's' || e.key === 'S')) {
 			e.preventDefault();
 			magick.downloadImage();
 		} else if (cmdOrCtrl && e.key === '0') {
