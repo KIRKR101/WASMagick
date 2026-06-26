@@ -29,7 +29,7 @@
 		isDragging?: boolean;
 		onBrowse?: () => void;
 		onSelectSample?: (s: SampleImage) => void;
-		onStateChange?: (s: { zoom: number; compareLabel: string | null }) => void;
+		onStateChange?: (s: { zoom: number }) => void;
 	} = $props();
 
 	let showPlaceholder = $derived(!originalImageUrl);
@@ -69,11 +69,9 @@
 	let canSplit = $derived(
 		!!processedImageUrl && !!originalImageUrl && processedImageUrl !== originalImageUrl
 	);
-	let compareLabel = $derived(splitMode ? 'Split compare' : isComparing ? 'Before' : null);
-
-	// Report state (zoom + compare label) to parent for the status bar.
+	// Report state (zoom) to parent for the status bar.
 	$effect(() => {
-		onStateChange({ zoom: currentZoom, compareLabel });
+		onStateChange({ zoom: currentZoom });
 	});
 
 	function setZoom(newZoom: number) {
@@ -299,6 +297,14 @@
 				draggable="false"
 				class="checkerboard max-h-none max-w-none origin-center object-contain transition-opacity duration-150 will-change-transform"
 			/>
+			{#if isComparing}
+				<div
+					class="pointer-events-none absolute top-3 z-30 rounded-xs border bg-background/80 px-2 py-1 text-[11px] font-medium text-foreground shadow-sm backdrop-blur-sm"
+					style="left: 12px"
+				>
+					Before
+				</div>
+			{/if}
 		{/if}
 
 		<!-- Loading overlay -->

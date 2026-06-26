@@ -5,13 +5,11 @@
 
 	let {
 		magick,
-		isDirty,
-		compareLabel
+		isDirty
 	}: {
 		magick: MagickState;
 		zoomPct: number;
 		isDirty: boolean;
-		compareLabel: string | null;
 	} = $props();
 
 	function sizeDelta() {
@@ -96,8 +94,6 @@
 				<Loader2 class="size-3 animate-spin" />
 				<span>{magick.currentProcessingStep || 'Processing…'}</span>
 			</span>
-		{:else if compareLabel}
-			<span class="font-medium text-primary">{compareLabel}</span>
 		{/if}
 
 		<!-- Dirty indicator -->

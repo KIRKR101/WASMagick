@@ -55,7 +55,6 @@
 
 	let fileInputEl = $state<HTMLInputElement | null>(null);
 	let viewportZoom = $state(100);
-	let viewportCompareLabel = $state<string | null>(null);
 
 	function openFilePicker() {
 		fileInputEl?.click();
@@ -86,9 +85,8 @@
 		guard.requestClose(onClose);
 	}
 
-	function onViewportStateChange(st: { zoom: number; compareLabel: string | null }) {
+	function onViewportStateChange(st: { zoom: number }) {
 		viewportZoom = st.zoom;
-		viewportCompareLabel = st.compareLabel;
 	}
 
 	let confirmOpen = $derived(guard.pending != null);
@@ -164,12 +162,7 @@
 		</div>
 	</div>
 
-	<StatusBar
-		{magick}
-		zoomPct={viewportZoom}
-		isDirty={guard.isDirty}
-		compareLabel={viewportCompareLabel}
-	/>
+	<StatusBar {magick} zoomPct={viewportZoom} isDirty={guard.isDirty} />
 </div>
 
 <ConfirmDialog

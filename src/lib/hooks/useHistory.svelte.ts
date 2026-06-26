@@ -27,6 +27,7 @@ export interface HistoryEntry {
 	/** Creation timestamp. */
 	ts: number;
 	isOriginal: boolean;
+	statsMessage: string;
 }
 
 const MAX_ENTRIES = 40;
@@ -84,7 +85,8 @@ export class HistoryState {
 			size: magick.originalImageSize,
 			time: 0,
 			ts: Date.now(),
-			isOriginal: true
+			isOriginal: true,
+			statsMessage: 'Original'
 		};
 		this.entries = [entry];
 		this.pointer = 0;
@@ -108,7 +110,8 @@ export class HistoryState {
 			size: 0,
 			time: 0,
 			ts: Date.now(),
-			isOriginal: false
+			isOriginal: false,
+			statsMessage: magick.statsMessage
 		};
 		// Estimate size from the blob.
 		try {
@@ -171,7 +174,6 @@ export class HistoryState {
 			magick.processedImageName = null;
 			magick.processedWidth = 0;
 			magick.processedHeight = 0;
-			magick.statsMessage = 'Original';
 		} else {
 			magick.processedImageUrl = await cloneBlobUrl(entry.blobUrl);
 			magick.processedImageFormat = entry.format;
@@ -179,9 +181,8 @@ export class HistoryState {
 			magick.processedImageName = `${base}-edited.${entry.format}`;
 			magick.processedWidth = entry.width;
 			magick.processedHeight = entry.height;
-			magick.statsMessage =
-				entry.time > 0 ? `Restored · ${entry.width}×${entry.height} · ${entry.time}ms` : 'Restored';
 		}
+		magick.statsMessage = entry.statsMessage;
 		magick.hasError = false;
 		magick.errorMessage = null;
 	}
