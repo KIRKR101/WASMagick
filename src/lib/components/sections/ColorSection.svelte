@@ -41,19 +41,14 @@
 		<span class="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
 			>Color Space</span
 		>
-		<Select type="single" bind:value={magick.settings.colorSpace}>
-			<SelectTrigger class="h-9 text-xs">
-				{(magick.settings.colorSpace as string) || 'RGB'}
-			</SelectTrigger>
-			<SelectContent>
-				<SelectItem value="RGB">RGB</SelectItem>
-				<SelectItem value="Gray">Grayscale</SelectItem>
-				<SelectItem value="CMYK">CMYK</SelectItem>
-				<SelectItem value="HSL">HSL</SelectItem>
-				<SelectItem value="HSV">HSV</SelectItem>
-				<SelectItem value="LAB">LAB</SelectItem>
-			</SelectContent>
-		</Select>
+		<select bind:value={magick.settings.colorSpace} class="w-full h-9 text-xs font-mono bg-transparent outline-none">
+			<option value="RGB">RGB</option>
+			<option value="Gray">Grayscale</option>
+			<option value="CMYK">CMYK</option>
+			<option value="HSL">HSL</option>
+			<option value="HSV">HSV</option>
+			<option value="LAB">LAB</option>
+		</select>
 	</div>
 
 	<div class="grid grid-cols-2 gap-2">
@@ -64,17 +59,12 @@
 	<!-- Levels -->
 	<SectionCard title="Levels">
 		<div class="mb-3 flex items-center justify-start">
-			<Select type="single" bind:value={magick.settings.levelChannels}>
-				<SelectTrigger class="h-7 w-24 border-muted-foreground/30 px-2 text-[11px]">
-					{(magick.settings.levelChannels as string) || 'All'}
-				</SelectTrigger>
-				<SelectContent>
-					<SelectItem value="All">All</SelectItem>
-					<SelectItem value="Red">Red</SelectItem>
-					<SelectItem value="Green">Green</SelectItem>
-					<SelectItem value="Blue">Blue</SelectItem>
-				</SelectContent>
-			</Select>
+			<select bind:value={magick.settings.levelChannels} class="w-24 h-9 text-xs font-mono bg-transparent outline-none">
+				<option value="All">All</option>
+				<option value="Red">Red</option>
+				<option value="Green">Green</option>
+				<option value="Blue">Blue</option>
+			</select>
 		</div>
 		<div class="space-y-3">
 			<SliderRow

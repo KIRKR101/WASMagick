@@ -1,11 +1,9 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button/index.js';
-	import { RefreshCcw } from 'lucide-svelte';
 	import type { MagickState } from '$lib/useMagick.svelte';
 	import type { HistoryState } from '$lib/hooks/useHistory.svelte';
 	import type { PresetsState } from '$lib/hooks/usePresets.svelte';
 	import type { EditorSection } from '$lib/editor-types';
-	import HoverTooltip from './controls/HoverTooltip.svelte';
+	import { isGeoDirty, isColorDirty, isFiltersDirty, isExportDirty } from '$lib/utils';
 
 	import GeometrySection from './sections/GeometrySection.svelte';
 	import ColorSection from './sections/ColorSection.svelte';
@@ -18,12 +16,18 @@
 		activeSection = $bindable('geometry'),
 		magick,
 		history,
-		presets
+		presets,
+		onUploadClick,
+		onDownload,
+		onClearRequest
 	}: {
 		activeSection: EditorSection;
 		magick: MagickState;
 		history: HistoryState;
 		presets: PresetsState;
+		onUploadClick: () => void;
+		onDownload: () => void;
+		onClearRequest?: () => void;
 	} = $props();
 
 	const META: Record<
@@ -50,81 +54,32 @@
 		history: { title: 'History', subtitle: 'Undo · redo · states', scroll: false }
 	};
 
-	let geoDirty = $derived(
-		magick.settings.resizeW != null ||
-			magick.settings.resizeH != null ||
-			magick.settings.rotate !== '0' ||
-			magick.settings.flip ||
-			magick.settings.flop ||
-			magick.settings.borderSize[0] > 0 ||
-			magick.settings.extentW != null ||
-			magick.settings.extentH != null ||
-			magick.settings.deskewThreshold[0] > 0 ||
-			magick.settings.autoOrient
-	);
-	let colorDirty = $derived(
-		magick.settings.normalizeImage ||
-			magick.settings.autoLevel ||
-			magick.settings.brightness[0] !== 100 ||
-			magick.settings.contrast[0] !== 0 ||
-			magick.settings.saturation[0] !== 100 ||
-			magick.settings.hue[0] !== 100 ||
-			magick.settings.levelBlackpoint[0] !== 0 ||
-			magick.settings.levelWhitepoint[0] !== 100 ||
-			magick.settings.levelGamma[0] !== 1.0 ||
-			magick.settings.thresholdPercentage[0] !== 50 ||
-			magick.settings.sigmoidalContrast[0] !== 0 ||
-			magick.settings.colorSpace !== 'RGB'
-	);
-	let filtersDirty = $derived(
-		magick.settings.effect !== 'none' ||
-			magick.settings.blur[0] > 0 ||
-			magick.settings.sharpen[0] > 0
-	);
-	let exportDirty = $derived(
-		magick.settings.imageFormat !== 'WebP' ||
-			magick.settings.quality[0] !== 85 ||
-			!magick.settings.stripMeta
-	);
-
-	const DIRTY: Record<EditorSection, () => boolean> = {
-		geometry: () => geoDirty,
-		color: () => colorDirty,
-		filters: () => filtersDirty,
-		export: () => exportDirty,
-		presets: () => false,
-		history: () => false
-	};
-
-	let meta = $derived({ ...META[activeSection], dirty: DIRTY[activeSection]() });
+	let dirty = $derived({
+		geometry: isGeoDirty(magick.settings),
+		color: isColorDirty(magick.settings),
+		filters: isFiltersDirty(magick.settings),
+		export: isExportDirty(magick.settings),
+		presets: false,
+		history: false
+	});
+	let meta = $derived({ ...META[activeSection], dirty: dirty[activeSection] });
+	let canDownload = $derived(!!magick.processedImageUrl);
 </script>
 
-<aside class="flex h-full w-full flex-col border-l bg-background">
-	<!-- Header -->
-	<header class="flex h-12 shrink-0 items-center justify-between gap-2 border-b px-4">
-		<div class="min-w-0">
-			<h2 class="text-sm font-semibold tracking-tight">{meta.title}</h2>
-			<p class="truncate text-[11px] text-muted-foreground">{meta.subtitle}</p>
-		</div>
-		<div class="flex shrink-0 items-center gap-1">
-			{#if meta.reset && meta.dirty}
-				<HoverTooltip label="Reset {meta.title}">
-					<Button
-						onclick={meta.reset}
-						variant="ghost"
-						size="icon-sm"
-						aria-label="Reset {meta.title}"
-					>
-						<RefreshCcw class="size-3.5" />
-					</Button>
-				</HoverTooltip>
-			{/if}
-		</div>
-	</header>
+<aside class="flex h-full w-full flex-col border-r border-foreground/30 bg-[#f7f7f4] font-mono text-sm dark:bg-background dark:border-border">
+
+
+	<!-- Header for current section -->
+	<div class="px-4 py-3 border-b border-foreground/30 flex justify-between items-center text-xs uppercase tracking-wider text-muted-foreground">
+		<span>{meta.title}</span>
+		{#if meta.reset && meta.dirty}
+			<button class="hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" onclick={meta.reset}>[RESET]</button>
+		{/if}
+	</div>
 
 	<!-- Body -->
 	<div
-		class="custom-scrollbar min-h-0 flex-1 overflow-y-auto p-4 {meta.scroll === false
+		class="properties-panel-inner custom-scrollbar min-h-0 flex-1 overflow-y-auto p-4 {meta.scroll === false
 			? 'overflow-hidden'
 			: ''}"
 	>
@@ -139,7 +94,23 @@
 		{:else if activeSection === 'presets'}
 			<PresetsSection {magick} {presets} />
 		{:else if activeSection === 'history'}
-			<HistoryPanel {magick} {history} />
+			<HistoryPanel {magick} {history} {onClearRequest} />
 		{/if}
+	</div>
+
+	<!-- Bottom Export Button -->
+	<div class="p-4 border-t border-foreground/30 mt-auto bg-[#f7f7f4] dark:bg-background">
+		<div class="flex justify-between items-center text-xs mb-3 text-muted-foreground uppercase">
+			<span>Output format</span>
+			<span class="underline underline-offset-2">{magick.settings.imageFormat}</span>
+		</div>
+		<button
+			class="flex w-full items-center justify-between border border-foreground/30 bg-transparent text-muted-foreground px-3 py-2 hover:bg-foreground hover:text-background transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+			onclick={onDownload}
+			disabled={!canDownload}
+		>
+			<span>Export canvas</span>
+			<span class="text-xs opacity-70">Ctrl+S</span>
+		</button>
 	</div>
 </aside>

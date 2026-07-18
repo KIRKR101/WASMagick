@@ -1,179 +1,185 @@
 <script lang="ts">
-	import {
-		Upload,
-		Ruler,
-		Palette,
-		Wand2,
-		Download,
-		Sparkles,
-		History,
-		Zap,
-		RotateCcw,
-		Loader2
-	} from 'lucide-svelte';
 	import type { EditorSection, RailItem } from '$lib/editor-types';
 	import type { MagickState } from '$lib/useMagick.svelte';
-	import HoverTooltip from './controls/HoverTooltip.svelte';
+	import type { HistoryState } from '$lib/hooks/useHistory.svelte';
+	import { isGeoDirty, isColorDirty, isFiltersDirty, isExportDirty } from '$lib/utils';
 
 	let {
 		activeSection = $bindable(),
 		magick,
+		history,
+		debugMode = false,
+		isDarkMode = false,
 		onUploadClick,
 		onProcess,
 		onReset,
-		onDownload
+		onToggleDebug,
+		onToggleTheme,
+		onToggleShortcuts,
+		onUndo,
+		onRedo,
+		onClose
 	}: {
 		activeSection?: EditorSection;
 		magick: MagickState;
+		history: HistoryState;
+		debugMode?: boolean;
+		isDarkMode?: boolean;
 		onUploadClick: () => void;
 		onProcess: () => void;
 		onReset: () => void;
-		onDownload: () => void;
+		onToggleDebug?: () => void;
+		onToggleTheme?: () => void;
+		onToggleShortcuts?: () => void;
+		onUndo?: () => void;
+		onRedo?: () => void;
+		onClose?: () => void;
 	} = $props();
 
-	// Geometry / Color / Filters dirty checks
-	let geoDirty = $derived(
-		magick.settings.resizeW != null ||
-			magick.settings.resizeH != null ||
-			magick.settings.rotate !== '0' ||
-			magick.settings.flip ||
-			magick.settings.flop ||
-			magick.settings.borderSize[0] > 0 ||
-			magick.settings.extentW != null ||
-			magick.settings.extentH != null ||
-			magick.settings.deskewThreshold[0] > 0 ||
-			magick.settings.autoOrient
-	);
-	let colorDirty = $derived(
-		magick.settings.normalizeImage ||
-			magick.settings.autoLevel ||
-			magick.settings.brightness[0] !== 100 ||
-			magick.settings.contrast[0] !== 0 ||
-			magick.settings.saturation[0] !== 100 ||
-			magick.settings.hue[0] !== 100 ||
-			magick.settings.levelBlackpoint[0] !== 0 ||
-			magick.settings.levelWhitepoint[0] !== 100 ||
-			magick.settings.levelGamma[0] !== 1.0 ||
-			magick.settings.thresholdPercentage[0] !== 50 ||
-			magick.settings.sigmoidalContrast[0] !== 0 ||
-			magick.settings.colorSpace !== 'RGB'
-	);
-	let filtersDirty = $derived(
-		magick.settings.effect !== 'none' ||
-			magick.settings.blur[0] > 0 ||
-			magick.settings.sharpen[0] > 0
-	);
-	let exportDirty = $derived(
-		magick.settings.imageFormat !== 'WebP' ||
-			magick.settings.quality[0] !== 85 ||
-			!magick.settings.stripMeta
-	);
+	function sectionSummary(id: EditorSection): string {
+		const s = magick.settings;
+		switch (id) {
+			case 'geometry': {
+				const parts: string[] = [];
+				if (s.resizeW || s.resizeH) parts.push(`${s.resizeW ?? 'A'}×${s.resizeH ?? 'A'}`);
+				if (s.rotate !== '0') parts.push(`${s.rotate}°`);
+				return parts.join(' · ');
+			}
+			case 'color': {
+				const parts: string[] = [];
+				if (s.brightness[0] !== 100) parts.push(`Brt ${s.brightness[0]}%`);
+				if (s.saturation[0] !== 100) parts.push(`Sat ${s.saturation[0]}%`);
+				if (s.hue[0] !== 100) parts.push(`Hue ${s.hue[0]}%`);
+				if (s.contrast[0] !== 0) parts.push(`Con ${s.contrast[0]}`);
+				if (s.colorSpace !== 'RGB') parts.push(s.colorSpace);
+				return parts.join(' · ');
+			}
+			case 'filters': {
+				const parts: string[] = [];
+				if (s.effect !== 'none') parts.push(s.effect);
+				if (s.blur[0] > 0) parts.push(`Blur ${s.blur[0]}`);
+				if (s.sharpen[0] > 0) parts.push(`Sharp ${s.sharpen[0]}`);
+				return parts.join(' · ');
+			}
+			case 'export': {
+				return `${s.imageFormat} ${s.quality[0]}%`;
+			}
+			default:
+				return '';
+		}
+	}
 
 	const items: RailItem[] = $derived([
-		{ id: 'geometry', label: 'Geometry', icon: Ruler, shortcut: '1', dirty: geoDirty },
-		{ id: 'color', label: 'Color', icon: Palette, shortcut: '2', dirty: colorDirty },
-		{ id: 'filters', label: 'Filters', icon: Wand2, shortcut: '3', dirty: filtersDirty },
-		{ id: 'export', label: 'Export', icon: Download, shortcut: '4', dirty: exportDirty },
-		{ id: 'presets', label: 'Presets', icon: Sparkles, shortcut: '5' },
-		{ id: 'history', label: 'History', icon: History, shortcut: '6' }
+		{ id: 'geometry', label: 'GEOMETRY', shortcut: '1', dirty: isGeoDirty(magick.settings) },
+		{ id: 'color', label: 'COLOR', shortcut: '2', dirty: isColorDirty(magick.settings) },
+		{ id: 'filters', label: 'FILTERS', shortcut: '3', dirty: isFiltersDirty(magick.settings) },
+		{ id: 'export', label: 'EXPORT', shortcut: '4', dirty: isExportDirty(magick.settings) },
+		{ id: 'presets', label: 'PRESETS', shortcut: '5' },
+		{ id: 'history', label: 'HISTORY', shortcut: '6' }
 	]);
-
-	let canProcess = $derived(magick.wasmLoaded && !!magick.sourceBytes && !magick.isLoading);
-	let canDownload = $derived(!!magick.processedImageUrl);
 </script>
 
 <aside
-	class="z-20 flex w-[var(--rail-w)] shrink-0 flex-col items-center gap-1 border-r bg-background py-2"
+	class="z-20 flex w-64 shrink-0 flex-col border-r border-foreground/30 bg-[#f7f7f4] px-4 py-4 font-mono text-sm uppercase dark:border-border dark:bg-background"
 	aria-label="Tool rail"
 >
-	<!-- Upload button (top, always visible) -->
-	<HoverTooltip label="Upload (V)">
-		<button
-			onclick={onUploadClick}
-			class="flex size-10 items-center justify-center rounded-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
-			aria-label="Upload (V)"
-		>
-			<Upload class="size-5" />
-		</button>
-	</HoverTooltip>
-
-	<div class="my-1 h-px w-6 bg-border"></div>
+	<div class="mb-3 text-muted-foreground">/TOOLS</div>
 
 	<!-- Section buttons -->
-	{#each items as item (item.id)}
-		{@const Icon = item.icon as typeof Ruler}
-		<HoverTooltip>
-			{#snippet labelChildren()}
-				{item.label}
-				<span class="ml-1 text-muted-foreground">Alt+{item.shortcut}</span>
-			{/snippet}
+	<div class="mb-6 flex flex-col gap-1.5">
+		{#each items as item (item.id)}
 			<button
 				onclick={() => (activeSection = item.id)}
-				class="relative flex size-10 items-center justify-center rounded-xs transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none {activeSection ===
+				class="group flex w-full items-center justify-between text-left transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none {activeSection ===
 				item.id
-					? 'bg-primary text-primary-foreground'
-					: 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
+					? 'font-bold text-foreground'
+					: 'text-muted-foreground hover:text-foreground'}"
 				aria-label="{item.label} (Alt+{item.shortcut})"
 				aria-pressed={activeSection === item.id}
 			>
-				<Icon class="size-5" />
+				<span>[{activeSection === item.id ? '*' : ' '}] {item.label}</span>
 				{#if item.dirty}
+					<span class="text-xs">^</span>
+				{/if}
+				{#if sectionSummary(item.id)}
 					<span
-						class="absolute top-1 right-1 size-1.5 rounded-full {activeSection === item.id
-							? 'bg-primary-foreground'
-							: 'bg-primary'}"
-					></span>
+						class="truncate pl-2 text-[10px] font-normal text-muted-foreground/60 normal-case group-hover:text-foreground/60"
+						>{sectionSummary(item.id)}</span
+					>
 				{/if}
 			</button>
-		</HoverTooltip>
-	{/each}
+		{/each}
+	</div>
 
-	<!-- Spacer -->
-	<div class="mt-auto"></div>
+	<div class="mb-3 text-muted-foreground">/ACTIONS</div>
+	<div class="flex flex-col gap-1.5">
+		<button
+			onclick={onUploadClick}
+			class="group flex w-full items-center justify-between text-left text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+		>
+			<span>[ ] UPLOAD</span>
+			<span class="text-[10px] opacity-70">Ctrl+O</span>
+		</button>
 
-	<!-- Bottom action cluster: Process / Reset / Download -->
-	<div class="mt-1 flex flex-col items-center gap-1 border-t border-border/60 pt-2">
-		<HoverTooltip>
-			{#snippet labelChildren()}
-				{magick.isLoading ? 'Processing…' : 'Process'}
-				<span class="ml-1 text-muted-foreground">Ctrl+Enter</span>
-			{/snippet}
+		<button
+			onclick={onProcess}
+			disabled={!magick.wasmLoaded || !magick.sourceBytes}
+			class="group flex w-full items-center justify-between text-left text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+		>
+			<span>[{magick.isLoading ? '~' : ' '}] PROCESS</span>
+			<span class="text-[10px] opacity-70">Ctrl+Enter</span>
+		</button>
+
+		<button
+			onclick={onReset}
+			disabled={!magick.sourceBytes}
+			class="group flex w-full items-center justify-between text-left text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+		>
+			<span>[ ] RESET ALL</span>
+		</button>
+	</div>
+
+	<div class="mt-auto mb-3 text-muted-foreground">/NAV</div>
+	<div class="flex flex-col gap-1.5">
+		<div class="flex border border-foreground/30 mb-2">
 			<button
-				onclick={onProcess}
-				disabled={!canProcess}
-				class="flex size-10 items-center justify-center rounded-xs bg-primary text-primary-foreground transition-all hover:bg-primary/90 focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
-				aria-label="Process (Ctrl+Enter)"
+				onclick={onUndo}
+				disabled={!history.canUndo}
+				class="flex-1 px-2 py-1 text-center font-mono text-[11px] uppercase text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 			>
-				{#if magick.isLoading}
-					<Loader2 class="size-5 animate-spin" />
-				{:else}
-					<Zap class="size-5" />
-				{/if}
+				[&lt;] UNDO
 			</button>
-		</HoverTooltip>
-		<HoverTooltip label="Reset">
+			<div class="w-px self-stretch bg-foreground/30"></div>
 			<button
-				onclick={onReset}
-				disabled={!magick.sourceBytes}
-				class="flex size-9 items-center justify-center rounded-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
-				aria-label="Reset Settings"
+				onclick={onRedo}
+				disabled={!history.canRedo}
+				class="flex-1 px-2 py-1 text-center font-mono text-[11px] uppercase text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 			>
-				<RotateCcw class="size-4" />
+				REDO [&gt;]
 			</button>
-		</HoverTooltip>
-		<HoverTooltip>
-			{#snippet labelChildren()}
-				Download
-				<span class="ml-1 text-muted-foreground">Ctrl+S</span>
-			{/snippet}
-			<button
-				onclick={onDownload}
-				disabled={!canDownload}
-				class="flex size-9 items-center justify-center rounded-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
-				aria-label="Download (Ctrl+S)"
-			>
-				<Download class="size-4" />
-			</button>
-		</HoverTooltip>
+		</div>
+
+		<button
+			onclick={onToggleDebug}
+			class="group flex w-full items-center justify-between text-left text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none {debugMode
+				? 'text-foreground'
+				: ''}"
+		>
+			<span>[B] DEBUG</span>
+		</button>
+
+		<button
+			onclick={onToggleTheme}
+			class="group flex w-full items-center justify-between text-left text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+		>
+			<span>[{isDarkMode ? '~' : 'O'}] THEME</span>
+		</button>
+
+		<button
+			onclick={onToggleShortcuts}
+			class="group flex w-full items-center justify-between text-left text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+		>
+			<span>[?] SHORTCUTS</span>
+		</button>
 	</div>
 </aside>

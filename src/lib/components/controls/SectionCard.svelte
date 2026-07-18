@@ -12,7 +12,7 @@
 	} = $props();
 </script>
 
-<section class={cn('rounded-xs border border-border/50 bg-muted/20 p-3', className)}>
+<section class={cn('border border-foreground/30 bg-transparent p-3', className)}>
 	{#if title}
 		<h4 class="mb-2.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
 			{title}

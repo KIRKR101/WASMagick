@@ -8,7 +8,6 @@
 	import { Slider } from '$lib/components/ui/slider/index.js';
 	import type { MagickState } from '$lib/useMagick.svelte';
 	import ToggleRow from '$lib/components/controls/ToggleRow.svelte';
-
 	let { magick } = $props<{ magick: MagickState }>();
 
 	const LOSSLESS = new Set(['PNG', 'GIF']);
@@ -21,16 +20,11 @@
 			<span class="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
 				>Format</span
 			>
-			<Select type="single" bind:value={magick.settings.imageFormat}>
-				<SelectTrigger class="h-9 text-xs">
-					{(magick.settings.imageFormat as string) || 'Select Format'}
-				</SelectTrigger>
-				<SelectContent>
-					{#each ['WebP', 'JPEG', 'PNG', 'AVIF', 'JXL', 'TIFF', 'GIF'] as fmt}
-						<SelectItem value={fmt}>{fmt}</SelectItem>
-					{/each}
-				</SelectContent>
-			</Select>
+			<select bind:value={magick.settings.imageFormat} class="w-full h-9 text-xs font-mono bg-transparent outline-none">
+				{#each ['WebP', 'JPEG', 'PNG', 'AVIF', 'JXL', 'TIFF', 'GIF'] as fmt}
+					<option value={fmt}>{fmt}</option>
+				{/each}
+			</select>
 		</div>
 		<div class="space-y-2">
 			<div class="flex items-center justify-between">
@@ -45,15 +39,18 @@
 					{/if}
 				</span>
 			</div>
-			<Slider
-				type="multiple"
-				bind:value={magick.settings.quality}
-				max={100}
-				min={1}
-				step={1}
-				disabled={isLossless}
-				class="py-2"
-			/>
+			<div class="relative flex items-center h-4 py-2">
+				<div class="absolute inset-x-0 h-px border-b border-foreground/50 pointer-events-none"></div>
+				<input
+					type="range"
+					min={1}
+					max={100}
+					step={1}
+					bind:value={magick.settings.quality[0]}
+					disabled={isLossless}
+					class="w-full appearance-none bg-transparent m-0 p-0 h-4 cursor-pointer focus:outline-none slider-raw disabled:opacity-50 disabled:cursor-not-allowed"
+				/>
+			</div>
 		</div>
 	</div>
 
@@ -66,7 +63,7 @@
 
 	<!-- Output preview -->
 	{#if magick.processedImageUrl}
-		<div class="rounded-xs border border-border/50 bg-muted/30 p-3">
+		<div class="border border-foreground/30 bg-transparent p-3">
 			<div class="mb-2 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
 				Output
 			</div>

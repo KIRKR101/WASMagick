@@ -1,10 +1,4 @@
 <script lang="ts">
-	import {
-		Select,
-		SelectContent,
-		SelectItem,
-		SelectTrigger
-	} from '$lib/components/ui/select/index.js';
 	import type { MagickState } from '$lib/useMagick.svelte';
 	import SliderRow from '$lib/components/controls/SliderRow.svelte';
 	import SectionCard from '$lib/components/controls/SectionCard.svelte';
@@ -30,16 +24,11 @@
 		<span class="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
 			>Effect Preset</span
 		>
-		<Select type="single" bind:value={magick.settings.effect}>
-			<SelectTrigger class="h-9">
-				{EFFECT_LABELS[magick.settings.effect as string] ?? (magick.settings.effect as string)}
-			</SelectTrigger>
-			<SelectContent>
-				{#each Object.entries(EFFECT_LABELS) as [value, label]}
-					<SelectItem {value}>{label}</SelectItem>
-				{/each}
-			</SelectContent>
-		</Select>
+		<select bind:value={magick.settings.effect} class="w-full h-9 font-mono text-xs bg-transparent outline-none">
+			{#each Object.entries(EFFECT_LABELS) as [val, label]}
+				<option value={val}>{label}</option>
+			{/each}
+		</select>
 	</div>
 
 	{#if magick.settings.effect !== 'none'}
@@ -112,7 +101,7 @@
 	{/if}
 
 	<!-- Blur + Sharpen -->
-	<div class="grid grid-cols-2 gap-3 border-t border-dashed border-border/60 pt-4">
+	<div class="grid grid-cols-2 gap-3 border-t border-border/60 pt-4">
 		<SliderRow label="Blur" bind:value={magick.settings.blur} min={0} max={20} step={0.5} />
 		<SliderRow label="Sharpen" bind:value={magick.settings.sharpen} min={0} max={10} step={0.5} />
 	</div>

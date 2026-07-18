@@ -10,8 +10,6 @@
 	import type { MagickState } from '$lib/useMagick.svelte';
 	import SliderRow from '$lib/components/controls/SliderRow.svelte';
 	import ToggleRow from '$lib/components/controls/ToggleRow.svelte';
-	import SectionCard from '$lib/components/controls/SectionCard.svelte';
-
 	let { magick } = $props<{ magick: MagickState }>();
 </script>
 
@@ -51,79 +49,73 @@
 		</div>
 	</div>
 
-	<!-- Rotate + Transform -->
-	<div class="grid grid-cols-2 gap-3">
-		<div class="space-y-2">
-			<span class="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
-				>Rotate</span
+	<!-- Rotate + Transform + Auto Orient -->
+	<div class="space-y-3 border-t border-dashed border-foreground/20 pt-4">
+		<span class="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
+			>Rotate</span
+		>
+		<div class="grid grid-cols-2 gap-3">
+			<select
+				bind:value={magick.settings.rotate}
+				class="h-9 w-full bg-transparent font-mono text-xs outline-none"
 			>
-			<Select type="single" bind:value={magick.settings.rotate}>
-				<SelectTrigger class="h-9 text-xs">
-					{#if magick.settings.rotate === '0'}0°{:else}{magick.settings.rotate}°{/if}
-				</SelectTrigger>
-				<SelectContent>
-					<SelectItem value="0">0° (None)</SelectItem>
-					<SelectItem value="90">90° CW</SelectItem>
-					<SelectItem value="180">180°</SelectItem>
-					<SelectItem value="-90">270° CCW</SelectItem>
-				</SelectContent>
-			</Select>
-		</div>
-		<div class="space-y-2">
-			<span class="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
-				>Transform</span
-			>
+				<option value="0">0° (None)</option>
+				<option value="90">90° CW</option>
+				<option value="180">180°</option>
+				<option value="-90">270° CCW</option>
+			</select>
 			<div class="grid h-9 grid-cols-2 gap-1.5">
-				<label
-					for="geo-flip"
-					class="flex cursor-pointer items-center justify-center gap-1.5 rounded-xs border border-border/50 bg-muted/40 px-2 transition-colors hover:bg-muted/60"
+				<button
+					type="button"
+					class="flex cursor-pointer items-center justify-center gap-1 border border-foreground/30 bg-transparent px-1 focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+					onclick={() => (magick.settings.flip = !magick.settings.flip)}
 				>
-					<Switch id="geo-flip" bind:checked={magick.settings.flip} class="pointer-events-none" />
-					<span class="text-[11px] font-semibold">Flip</span>
-				</label>
-				<label
-					for="geo-flop"
-					class="flex cursor-pointer items-center justify-center gap-1.5 rounded-xs border border-border/50 bg-muted/40 px-2 transition-colors hover:bg-muted/60"
+					<span class="font-mono text-[11px] whitespace-pre"
+						>[{magick.settings.flip ? '*' : ' '}]</span
+					>
+					<span class="font-mono text-[11px] uppercase">Flip</span>
+				</button>
+				<button
+					type="button"
+					class="flex cursor-pointer items-center justify-center gap-1 border border-foreground/30 bg-transparent px-1 focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+					onclick={() => (magick.settings.flop = !magick.settings.flop)}
 				>
-					<Switch id="geo-flop" bind:checked={magick.settings.flop} class="pointer-events-none" />
-					<span class="text-[11px] font-semibold">Flop</span>
-				</label>
+					<span class="font-mono text-[11px] whitespace-pre"
+						>[{magick.settings.flop ? '*' : ' '}]</span
+					>
+					<span class="font-mono text-[11px] uppercase">Flop</span>
+				</button>
 			</div>
 		</div>
+		<ToggleRow
+			id="geo-auto-orient"
+			label="Auto Orient"
+			description="Apply EXIF orientation"
+			bind:checked={magick.settings.autoOrient}
+		/>
 	</div>
 
-	<ToggleRow
-		id="geo-auto-orient"
-		label="Auto Orient"
-		description="Apply EXIF orientation"
-		bind:checked={magick.settings.autoOrient}
-	/>
-
 	<!-- Deskew -->
-	<SectionCard title="Deskew">
-		<div class="flex items-center justify-between">
-			<span class="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
-				>Auto Crop</span
-			>
-			<Switch
-				id="geo-deskew-crop"
-				bind:checked={magick.settings.deskewAutoCrop}
-				class="pointer-events-none scale-90"
-			/>
-		</div>
-		<div class="mt-3">
-			<SliderRow
-				label="Threshold"
-				bind:value={magick.settings.deskewThreshold}
-				suffix="%"
-				min={0}
-				max={100}
-			/>
-		</div>
-	</SectionCard>
+	<div class="space-y-2 border-t border-dashed border-foreground/20 pt-4">
+		<span class="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
+			>Deskew</span
+		>
+		<ToggleRow
+			id="geo-deskew-crop"
+			label="Auto Crop"
+			bind:checked={magick.settings.deskewAutoCrop}
+		/>
+		<SliderRow
+			label="Threshold"
+			bind:value={magick.settings.deskewThreshold}
+			suffix="%"
+			min={0}
+			max={100}
+		/>
+	</div>
 
 	<!-- Canvas Extent -->
-	<div class="space-y-2 border-t border-dashed border-border/60 pt-4">
+	<div class="space-y-2 border-t border-dashed border-foreground/20 pt-4">
 		<span class="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
 			>Canvas Extent</span
 		>
@@ -155,38 +147,42 @@
 				/>
 			</div>
 		</div>
-		<div class="grid grid-cols-[1fr_auto] gap-2">
-			<Select type="single" bind:value={magick.settings.extentGravity}>
-				<SelectTrigger class="h-9 text-xs">
-					{(magick.settings.extentGravity as string) || 'Gravity'}
-				</SelectTrigger>
-				<SelectContent>
-					<SelectItem value="Center">Center</SelectItem>
-					<SelectItem value="NorthWest">Top Left</SelectItem>
-					<SelectItem value="North">Top Center</SelectItem>
-					<SelectItem value="NorthEast">Top Right</SelectItem>
-					<SelectItem value="West">Left</SelectItem>
-					<SelectItem value="East">Right</SelectItem>
-					<SelectItem value="SouthWest">Bottom Left</SelectItem>
-					<SelectItem value="South">Bottom Center</SelectItem>
-					<SelectItem value="SouthEast">Bottom Right</SelectItem>
-				</SelectContent>
-			</Select>
-			<div
-				class="relative h-9 w-12 overflow-hidden rounded-xs border border-border transition-all hover:ring-2 hover:ring-primary/50"
+		<div class="flex items-end gap-2">
+			<select
+				bind:value={magick.settings.extentGravity}
+				class="h-9 flex-1 bg-transparent font-mono text-xs outline-none"
 			>
-				<input
-					type="color"
-					bind:value={magick.settings.extentBgColor}
-					aria-label="Canvas background color"
-					class="absolute inset-0 -top-1/2 -left-1/2 h-[200%] w-[200%] cursor-pointer border-0 p-0"
-				/>
+				<option value="Center">Center</option>
+				<option value="NorthWest">Top Left</option>
+				<option value="North">Top Center</option>
+				<option value="NorthEast">Top Right</option>
+				<option value="West">Left</option>
+				<option value="East">Right</option>
+				<option value="SouthWest">Bottom Left</option>
+				<option value="South">Bottom Center</option>
+				<option value="SouthEast">Bottom Right</option>
+			</select>
+			<div class="flex flex-col items-center gap-0.5">
+				<span class="font-mono text-[9px] text-muted-foreground/60 uppercase">BG</span>
+				<div
+					class="relative h-9 w-9 overflow-hidden border border-foreground/50 transition-all hover:border-foreground"
+				>
+					<input
+						type="color"
+						bind:value={magick.settings.extentBgColor}
+						aria-label="Canvas background color"
+						class="absolute inset-0 -top-1/2 -left-1/2 h-[200%] w-[200%] cursor-pointer border-0 p-0"
+					/>
+				</div>
 			</div>
 		</div>
 	</div>
 
 	<!-- Border -->
-	<SectionCard title="Border">
+	<div class="space-y-2 border-t border-dashed border-foreground/20 pt-4">
+		<span class="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
+			>Border</span
+		>
 		<div class="flex items-end gap-3">
 			<div class="flex-1">
 				<SliderRow
@@ -197,16 +193,19 @@
 					max={50}
 				/>
 			</div>
-			<div
-				class="relative h-9 w-12 shrink-0 overflow-hidden rounded-xs border border-border transition-all hover:ring-2 hover:ring-primary/50"
-			>
-				<input
-					type="color"
-					bind:value={magick.settings.borderColor}
-					aria-label="Border color"
-					class="absolute inset-0 -top-1/2 -left-1/2 h-[200%] w-[200%] cursor-pointer border-0 p-0"
-				/>
+			<div class="flex flex-col items-center gap-0.5">
+				<span class="font-mono text-[9px] text-muted-foreground/60 uppercase">COLOR</span>
+				<div
+					class="relative h-9 w-9 shrink-0 overflow-hidden border border-foreground/50 transition-all hover:border-foreground"
+				>
+					<input
+						type="color"
+						bind:value={magick.settings.borderColor}
+						aria-label="Border color"
+						class="absolute inset-0 -top-1/2 -left-1/2 h-[200%] w-[200%] cursor-pointer border-0 p-0"
+					/>
+				</div>
 			</div>
 		</div>
-	</SectionCard>
+	</div>
 </div>

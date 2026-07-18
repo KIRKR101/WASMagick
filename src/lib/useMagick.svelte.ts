@@ -25,6 +25,32 @@ import type { MagickSettings, AppliedOptions } from './types';
 
 const AUTO_PROCESS_DELAY = 300;
 
+const STORAGE_KEY = 'wasmagick-settings';
+
+function loadPersistedSettings(): Partial<MagickSettings> {
+	try {
+		const raw = localStorage.getItem(STORAGE_KEY);
+		if (!raw) return {};
+		return JSON.parse(raw) as Partial<MagickSettings>;
+	} catch {
+		return {};
+	}
+}
+
+function persistSettings(s: MagickSettings): void {
+	try {
+		localStorage.setItem(
+			STORAGE_KEY,
+			JSON.stringify({
+				imageFormat: s.imageFormat,
+				quality: s.quality
+			})
+		);
+	} catch {
+		// ignore
+	}
+}
+
 export const DEFAULT_SETTINGS: MagickSettings = {
 	imageFormat: 'WebP',
 	quality: [85],
@@ -233,7 +259,7 @@ export class MagickState {
 	processedWidth = $state(0);
 	processedHeight = $state(0);
 	currentProcessingStep = $state<string | null>(null);
-	settings = $state<MagickSettings>({ ...DEFAULT_SETTINGS });
+	settings = $state<MagickSettings>({ ...DEFAULT_SETTINGS, ...loadPersistedSettings() });
 	workerReady = $state(false);
 
 	private _worker: Worker | null = null;
@@ -267,13 +293,17 @@ export class MagickState {
 
 	async initWasm(debugMode = false): Promise<void> {
 		try {
+			this.currentProcessingStep = 'Downloading WASM binary...';
 			const response = await fetch('/magick.wasm', { cache: 'force-cache' });
 			if (!response.ok) {
 				throw new Error(`Failed to fetch WASM: ${response.status}`);
 			}
+			this.currentProcessingStep = 'Parsing WebAssembly module...';
 			const wasmBytes = new Uint8Array(await response.arrayBuffer());
+			this.currentProcessingStep = 'Initializing ImageMagick engine...';
 			await initializeImageMagick(wasmBytes);
 			this.wasmLoaded = true;
+			this.currentProcessingStep = null;
 
 			if (debugMode) {
 				console.log('ImageMagick WASM loaded, Version:', Magick.imageMagickVersion);
@@ -281,6 +311,7 @@ export class MagickState {
 		} catch (e) {
 			this.statsMessage = 'Error Loading WASM';
 			this.hasError = true;
+			this.currentProcessingStep = null;
 			const message = e instanceof Error ? e.message : 'Unknown error';
 			this.errorMessage = message;
 			console.error('WASM initialization failed:', message);
@@ -433,6 +464,7 @@ export class MagickState {
 		this.settings.imageFormat = DEFAULT_SETTINGS.imageFormat;
 		this.settings.quality = [...DEFAULT_SETTINGS.quality];
 		this.settings.stripMeta = DEFAULT_SETTINGS.stripMeta;
+		persistSettings(this.settings);
 	}
 
 	resetSettings(): void {
@@ -945,6 +977,8 @@ export class MagickState {
 
 		this.isLoading = false;
 		this.currentProcessingStep = null;
+
+		persistSettings(this.settings);
 
 		const newSizeKB = (blob.size / 1024).toFixed(1);
 		const percentageChange =

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import TopBar from './TopBar.svelte';
 	import ToolRail from './ToolRail.svelte';
 	import CanvasViewport from './CanvasViewport.svelte';
 	import PropertiesPanel from './PropertiesPanel.svelte';
@@ -101,6 +100,35 @@
 	function onCancelReplace() {
 		guard.cancelPending();
 	}
+
+	let clearHistoryOpen = $state(false);
+	let resetConfirmOpen = $state(false);
+
+	function onClearHistoryRequest() {
+		clearHistoryOpen = true;
+	}
+
+	function onClearHistoryConfirm() {
+		history.clear();
+	}
+	function onClearHistoryCancel() {
+		clearHistoryOpen = false;
+	}
+
+	function onResetRequest() {
+		if (guard.isDirty) {
+			resetConfirmOpen = true;
+		} else {
+			onReset();
+		}
+	}
+	function onResetConfirm() {
+		resetConfirmOpen = false;
+		onReset();
+	}
+	function onResetCancel() {
+		resetConfirmOpen = false;
+	}
 </script>
 
 <!-- Hidden file input shared by rail upload + browse -->
@@ -113,28 +141,35 @@
 />
 
 <div class="flex h-screen max-h-screen w-full flex-col overflow-hidden bg-background">
-	<TopBar
-		{magick}
-		{history}
-		{debugMode}
-		{isDarkMode}
-		{onToggleDebug}
-		{onToggleTheme}
-		{onToggleShortcuts}
-		{onUndo}
-		{onRedo}
-		onClose={onCloseRequest}
-	/>
-
 	<div class="flex min-h-0 flex-1">
 		<ToolRail
 			{magick}
+			{history}
+			{debugMode}
+			{isDarkMode}
 			bind:activeSection
 			onUploadClick={openFilePicker}
-			{onProcess}
-			{onReset}
-			{onDownload}
+			onProcess={() => onProcess()}
+			onReset={onResetRequest}
+			{onToggleDebug}
+			{onToggleTheme}
+			{onToggleShortcuts}
+			{onUndo}
+			{onRedo}
+			onClose={onCloseRequest}
 		/>
+
+		<div class="hidden shrink-0 md:block" style="width: var(--panel-default);">
+			<PropertiesPanel 
+				{magick} 
+				{history} 
+				{presets} 
+				bind:activeSection 
+				onUploadClick={openFilePicker} 
+				{onDownload}
+				onClearRequest={onClearHistoryRequest}
+			/>
+		</div>
 
 		<div class="min-w-0 flex-1">
 			<CanvasViewport
@@ -149,16 +184,13 @@
 				processedWidth={magick.processedWidth}
 				processedHeight={magick.processedHeight}
 				processedFormat={magick.processedImageFormat}
+				magickSettings={magick.settings}
 				currentProcessingStep={magick.currentProcessingStep}
 				{isDragging}
 				onBrowse={openFilePicker}
 				{onSelectSample}
 				onStateChange={onViewportStateChange}
 			/>
-		</div>
-
-		<div class="hidden shrink-0 md:block" style="width: var(--panel-default);">
-			<PropertiesPanel {magick} {history} {presets} bind:activeSection />
 		</div>
 	</div>
 
@@ -171,4 +203,18 @@
 	kind={confirmKind}
 	onConfirm={onConfirmReplace}
 	onCancel={onCancelReplace}
+/>
+
+<ConfirmDialog
+	bind:open={clearHistoryOpen}
+	kind="clear-history"
+	onConfirm={onClearHistoryConfirm}
+	onCancel={onClearHistoryCancel}
+/>
+
+<ConfirmDialog
+	bind:open={resetConfirmOpen}
+	kind="reset-all"
+	onConfirm={onResetConfirm}
+	onCancel={onResetCancel}
 />
