@@ -69,21 +69,21 @@
 			>
 			<button
 				onclick={cancel}
-				class="border border-foreground/30 px-2 py-1 font-mono text-[11px] uppercase text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+				class="cursor-pointer border border-foreground/30 px-3 py-1 font-mono text-[11px] uppercase text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 			>
-				[ Cancel ]
+				[<span class="hover:underline"> Cancel </span>]
 			</button>
 			<button
 				onclick={confirm}
-				class="border border-foreground/30 px-2 py-1 font-mono text-[11px] uppercase text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+				class="cursor-pointer border border-foreground/30 px-3 py-1 font-mono text-[11px] uppercase text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 			>
-				[{kind === 'close' ? 'Close' : kind === 'clear-history' ? 'Clear' : kind === 'reset-all' ? 'Reset' : 'Replace'}]
+				[<span class="hover:underline">{kind === 'close' ? 'Close' : kind === 'clear-history' ? 'Clear' : kind === 'reset-all' ? 'Reset' : 'Replace'}</span>]
 			</button>
 			</div>
 
 			<button
 				onclick={cancel}
-				class="absolute top-2 right-2 flex size-5 items-center justify-center font-mono text-[11px] text-muted-foreground/40 hover:text-foreground focus:outline-none"
+				class="absolute top-2 right-2 flex size-5 cursor-pointer items-center justify-center font-mono text-[11px] text-muted-foreground/40 focus:outline-none"
 				aria-label="Close"
 			>
 				[X]

@@ -27,11 +27,57 @@ const AUTO_PROCESS_DELAY = 300;
 
 const STORAGE_KEY = 'wasmagick-settings';
 
+const ARRAY_KEYS = new Set([
+	'quality',
+	'borderSize',
+	'deskewThreshold',
+	'brightness',
+	'saturation',
+	'hue',
+	'contrast',
+	'levelBlackpoint',
+	'levelWhitepoint',
+	'levelGamma',
+	'thresholdPercentage',
+	'sigmoidalContrast',
+	'sigmoidalMidpoint',
+	'blur',
+	'sharpen',
+	'sepiaThreshold',
+	'charcoalIntensity',
+	'cannyEdgeStrength',
+	'cannyEdgeLower',
+	'cannyEdgeUpper',
+	'oilpaintRadius',
+	'solarizeFactor',
+	'bilateralWidth',
+	'bilateralHeight',
+	'bilateralIntensitySigma',
+	'bilateralSpatialSigma'
+]);
+
+const PERSISTED_KEYS = new Set(['imageFormat', 'quality']);
+
 function loadPersistedSettings(): Partial<MagickSettings> {
 	try {
 		const raw = localStorage.getItem(STORAGE_KEY);
 		if (!raw) return {};
-		return JSON.parse(raw) as Partial<MagickSettings>;
+		const parsed: Record<string, unknown> = JSON.parse(raw);
+		// Only load keys that persistSettings actually writes, so old/corrupt
+		// entries (e.g. stripMeta: false from a prior version) can't override defaults.
+		const result: Record<string, unknown> = {};
+		for (const key of PERSISTED_KEYS) {
+			if (key in parsed) {
+				result[key] = parsed[key];
+			}
+		}
+		// Normalize array values that may have been stored as plain numbers.
+		for (const key of ARRAY_KEYS) {
+			if (key in result && typeof result[key] === 'number') {
+				result[key] = [result[key]];
+			}
+		}
+		return result as Partial<MagickSettings>;
 	} catch {
 		return {};
 	}

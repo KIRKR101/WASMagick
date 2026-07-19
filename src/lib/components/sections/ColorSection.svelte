@@ -11,6 +11,22 @@
 	import SectionCard from '$lib/components/controls/SectionCard.svelte';
 
 	let { magick } = $props<{ magick: MagickState }>();
+
+	const COLORSPACE_OPTIONS = [
+		{ value: 'RGB', label: 'RGB' },
+		{ value: 'Gray', label: 'Grayscale' },
+		{ value: 'CMYK', label: 'CMYK' },
+		{ value: 'HSL', label: 'HSL' },
+		{ value: 'HSV', label: 'HSV' },
+		{ value: 'LAB', label: 'LAB' }
+	];
+
+	const CHANNEL_OPTIONS = [
+		{ value: 'All', label: 'All' },
+		{ value: 'Red', label: 'Red' },
+		{ value: 'Green', label: 'Green' },
+		{ value: 'Blue', label: 'Blue' }
+	];
 </script>
 
 <div class="space-y-5">
@@ -37,34 +53,37 @@
 	</SectionCard>
 
 	<!-- Color space + auto operations -->
-	<div class="space-y-2">
-		<span class="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
-			>Color Space</span
-		>
-		<select bind:value={magick.settings.colorSpace} class="w-full h-9 text-xs font-mono bg-transparent outline-none">
-			<option value="RGB">RGB</option>
-			<option value="Gray">Grayscale</option>
-			<option value="CMYK">CMYK</option>
-			<option value="HSL">HSL</option>
-			<option value="HSV">HSV</option>
-			<option value="LAB">LAB</option>
-		</select>
-	</div>
+	<div class="space-y-3">
+		<Select type="single" bind:value={magick.settings.colorSpace}>
+			<SelectTrigger class="w-full h-9 text-xs font-mono">
+				{COLORSPACE_OPTIONS.find(o => o.value === magick.settings.colorSpace)?.label ?? magick.settings.colorSpace}
+			</SelectTrigger>
+			<SelectContent>
+				{#each COLORSPACE_OPTIONS as opt (opt.value)}
+					<SelectItem value={opt.value}>{opt.label}</SelectItem>
+				{/each}
+			</SelectContent>
+		</Select>
 
 	<div class="grid grid-cols-2 gap-2">
 		<ToggleRow id="clr-normalize" label="Normalize" bind:checked={magick.settings.normalizeImage} />
 		<ToggleRow id="clr-autolevel" label="Auto Level" bind:checked={magick.settings.autoLevel} />
 	</div>
+	</div>
 
 	<!-- Levels -->
 	<SectionCard title="Levels">
 		<div class="mb-3 flex items-center justify-start">
-			<select bind:value={magick.settings.levelChannels} class="w-24 h-9 text-xs font-mono bg-transparent outline-none">
-				<option value="All">All</option>
-				<option value="Red">Red</option>
-				<option value="Green">Green</option>
-				<option value="Blue">Blue</option>
-			</select>
+			<Select type="single" bind:value={magick.settings.levelChannels}>
+				<SelectTrigger class="w-24 h-9 text-xs font-mono">
+					{CHANNEL_OPTIONS.find(o => o.value === magick.settings.levelChannels)?.label ?? magick.settings.levelChannels}
+				</SelectTrigger>
+				<SelectContent>
+					{#each CHANNEL_OPTIONS as opt (opt.value)}
+						<SelectItem value={opt.value}>{opt.label}</SelectItem>
+					{/each}
+				</SelectContent>
+			</Select>
 		</div>
 		<div class="space-y-3">
 			<SliderRow

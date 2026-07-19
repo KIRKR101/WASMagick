@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
-	import { Sparkles, Trash2, Check, Plus } from 'lucide-svelte';
+	import { Check } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 	import type { MagickState } from '$lib/useMagick.svelte';
 	import {
@@ -32,13 +32,10 @@
 
 <div class="space-y-5">
 	<div class="space-y-2">
-		<div class="flex items-center gap-1.5">
-			<Sparkles class="size-3.5 text-muted-foreground" />
-			<span class="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
-				>Built-in</span
-			>
-		</div>
-		<div class="grid grid-cols-1 gap-1.5">
+		<span class="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
+			>Built-in</span
+		>
+		<div class="grid grid-cols-1 gap-1.5 mt-2">
 			{#each BUILTIN_PRESETS as p (p.id)}
 				{@const active = presets.isBuiltInActive(magick, p)}
 				<button
@@ -82,8 +79,8 @@
 					if (e.key === 'Enter') save();
 				}}
 			/>
-			<button onclick={save} class="shrink-0 font-mono text-xs border border-foreground/30 px-2 hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-				[+] SAVE
+			<button onclick={save} class="group shrink-0 cursor-pointer font-mono text-xs border border-foreground/30 px-3 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+				[+] <span class="group-hover:underline">SAVE</span>
 			</button>
 		</div>
 		<p class="text-[11px] text-muted-foreground">
@@ -118,7 +115,7 @@
 						</button>
 						<button
 							onclick={() => presets.deleteUser(p.id)}
-							class="shrink-0 text-muted-foreground hover:text-foreground font-mono text-xs focus:outline-none"
+							class="shrink-0 cursor-pointer text-muted-foreground font-mono text-xs focus:outline-none"
 							aria-label="Delete preset"
 						>
 							[x]

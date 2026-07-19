@@ -43,9 +43,9 @@
 	<div class="flex flex-wrap items-center justify-center gap-2">
 		<button
 			onclick={onBrowse}
-			class="border border-foreground/30 px-3 py-1.5 font-mono text-[11px] uppercase text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+			class="cursor-pointer border border-foreground/30 px-3 py-1.5 font-mono text-[11px] uppercase text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 		>
-			[ Browse files ]
+			[<span class="hover:underline"> Browse files </span>]
 		</button>
 		<span
 			class="border border-foreground/30 px-3 py-1.5 font-mono text-[11px] text-muted-foreground"
@@ -57,9 +57,9 @@
 	<div class="w-full border-t border-foreground/30 pt-5">
 		<button
 			onclick={pickRandom}
-			class="w-full border border-foreground/30 px-3 py-2 font-mono text-[11px] uppercase text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+			class="w-full cursor-pointer border border-foreground/30 px-3 py-2 font-mono text-[11px] uppercase text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 		>
-			[ Random sample ]
+			[<span class="hover:underline"> Random sample </span>]
 		</button>
 	</div>
 </div>

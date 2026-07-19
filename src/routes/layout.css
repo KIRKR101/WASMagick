@@ -211,28 +211,6 @@ input[type='number'] {
 	-moz-appearance: textfield;
 }
 
-/* Brutalist Slider - thin visual, generous hit area */
-.slider-raw {
-	--thumb-w: 4px;
-	--thumb-h: 14px;
-}
-.slider-raw::-webkit-slider-thumb {
-	-webkit-appearance: none;
-	appearance: none;
-	width: var(--thumb-w);
-	height: var(--thumb-h);
-	background: var(--foreground);
-	cursor: pointer;
-}
-.slider-raw::-moz-range-thumb {
-	width: var(--thumb-w);
-	height: var(--thumb-h);
-	background: var(--foreground);
-	cursor: pointer;
-	border: none;
-	border-radius: 0;
-}
-
 /* Raw select/input in Properties Panel */
 .properties-panel-inner select,
 .properties-panel-inner input[type='number'],
@@ -242,11 +220,11 @@ input[type='number'] {
 }
 .properties-panel-inner input[type='number'],
 .properties-panel-inner input[type='text'] {
-	border: 1px dashed var(--muted-foreground);
+	border: 1px dashed color-mix(in oklch, var(--foreground) 30%, transparent);
 }
 .properties-panel-inner select {
 	border: none;
-	border-bottom: 1px dashed var(--muted-foreground);
+	border-bottom: 1px dashed color-mix(in oklch, var(--foreground) 30%, transparent);
 	-webkit-appearance: none;
 	-moz-appearance: none;
 	appearance: none;

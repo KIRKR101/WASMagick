@@ -37,9 +37,9 @@
 	<div class="flex flex-col items-center gap-3">
 		<a
 			href="/editor"
-			class="border border-foreground/30 px-8 py-3 text-xs uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+			class="group cursor-pointer border border-foreground/30 px-8 py-3 text-xs uppercase tracking-wider text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 		>
-			[ Enter editor ]
+			[<span class="group-hover:underline"> Enter editor </span>]
 		</a>
 
 		<div class="flex gap-3 text-xs text-muted-foreground/40">
@@ -54,17 +54,17 @@
 						localStorage.setItem('theme', 'light');
 					}
 				}}
-				class="border border-foreground/30 px-2 py-1 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+				class="group cursor-pointer border border-foreground/30 text-muted-foreground px-2 py-1 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 			>
-				[{isDarkMode ? '~' : 'O'}] THEME
+				[{isDarkMode ? '~' : 'O'}] <span class="group-hover:underline">THEME</span>
 			</button>
 			<a
 				href="https://github.com/KIRKR101/wasmagick-svelte"
 				target="_blank"
 				rel="noopener noreferrer"
-				class="border border-foreground/30 px-2 py-1 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+				class="group cursor-pointer border border-foreground/30 text-muted-foreground px-2 py-1 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 			>
-				[ GitHub ]
+				[<span class="group-hover:underline"> GitHub </span>]
 			</a>
 		</div>
 	</div>
@@ -101,6 +101,6 @@
 	</div>
 
 	<div class="mt-8 text-center text-[11px] text-muted-foreground/30">
-		powered by ImageMagick, all processing happens locally in your browser
+		powered by <a href="https://github.com/dlemstra/magick-wasm" class="underline decoration-dashed underline-offset-3 transition-colors hover:text-foreground">magick-wasm</a>, all processing happens locally in your browser
 	</div>
 </div>

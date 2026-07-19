@@ -40,7 +40,7 @@
 		<HoverTooltip label="Close image">
 			<button
 				onclick={onClose}
-				class="flex size-5 items-center justify-center border border-foreground/30 text-muted-foreground/60 transition-colors hover:bg-muted hover:text-foreground focus:outline-none max-md:hidden"
+				class="flex size-5 cursor-pointer items-center justify-center border border-foreground/30 text-muted-foreground/60 transition-colors focus:outline-none max-md:hidden"
 				aria-label="Close image"
 			>
 				<X class="size-3" />
@@ -53,7 +53,7 @@
 			<button
 				onclick={onUndo}
 				disabled={!history.canUndo}
-				class="px-1.5 py-1 text-muted-foreground transition-colors hover:text-foreground focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+				class="cursor-pointer px-1.5 py-1 text-muted-foreground transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
 			>
 				[&lt;]
 			</button>
@@ -62,7 +62,7 @@
 			<button
 				onclick={onRedo}
 				disabled={!history.canRedo}
-				class="px-1.5 py-1 text-muted-foreground transition-colors hover:text-foreground focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+				class="cursor-pointer px-1.5 py-1 text-muted-foreground transition-colors focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
 			>
 				[&gt;]
 			</button>
@@ -73,7 +73,7 @@
 		<HoverTooltip label="Debug Mode">
 			<button
 				onclick={onToggleDebug}
-				class="px-1.5 py-1 transition-colors focus:outline-none {debugMode ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}"
+				class="cursor-pointer px-1.5 py-1 transition-colors focus:outline-none {debugMode ? 'text-foreground' : 'text-muted-foreground'}"
 			>
 				[BUG]
 			</button>
@@ -82,7 +82,7 @@
 		<HoverTooltip label="Toggle Theme">
 			<button
 				onclick={onToggleTheme}
-				class="px-1.5 py-1 text-muted-foreground transition-colors hover:text-foreground focus:outline-none"
+				class="cursor-pointer px-1.5 py-1 text-muted-foreground transition-colors focus:outline-none"
 			>
 				[{isDarkMode ? '~' : 'O'}]
 			</button>
@@ -91,7 +91,7 @@
 		<HoverTooltip label="Shortcuts (Ctrl+Shift+?)">
 			<button
 				onclick={onToggleShortcuts}
-				class="px-1.5 py-1 text-muted-foreground transition-colors hover:text-foreground focus:outline-none"
+				class="cursor-pointer px-1.5 py-1 text-muted-foreground transition-colors focus:outline-none"
 			>
 				[?]
 			</button>

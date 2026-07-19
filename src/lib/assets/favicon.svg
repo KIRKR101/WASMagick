@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-  <title>WASMagick</title>
-  <rect x="28" y="44" width="72" height="56" rx="2" fill="none" stroke="currentColor" stroke-width="6"/>
-  <path d="M68 18l-6 16 8 4 6 16 6-16 8-4-6-16z" fill="currentColor" opacity="0.8"/>
-  <path d="M42 66h44M42 78h44M42 90h44" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity="0.4"/>
-</svg>

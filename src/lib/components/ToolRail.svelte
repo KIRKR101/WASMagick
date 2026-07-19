@@ -3,6 +3,7 @@
 	import type { MagickState } from '$lib/useMagick.svelte';
 	import type { HistoryState } from '$lib/hooks/useHistory.svelte';
 	import { isGeoDirty, isColorDirty, isFiltersDirty, isExportDirty } from '$lib/utils';
+	import { DEFAULT_SETTINGS } from '$lib/useMagick.svelte';
 
 	let {
 		activeSection = $bindable(),
@@ -11,7 +12,6 @@
 		debugMode = false,
 		isDarkMode = false,
 		onUploadClick,
-		onProcess,
 		onReset,
 		onToggleDebug,
 		onToggleTheme,
@@ -26,7 +26,6 @@
 		debugMode?: boolean;
 		isDarkMode?: boolean;
 		onUploadClick: () => void;
-		onProcess: () => void;
 		onReset: () => void;
 		onToggleDebug?: () => void;
 		onToggleTheme?: () => void;
@@ -62,6 +61,12 @@
 				return parts.join(' · ');
 			}
 			case 'export': {
+				if (
+					s.imageFormat === DEFAULT_SETTINGS.imageFormat &&
+					s.quality[0] === DEFAULT_SETTINGS.quality[0]
+				) {
+					return '';
+				}
 				return `${s.imageFormat} ${s.quality[0]}%`;
 			}
 			default:
@@ -90,23 +95,37 @@
 		{#each items as item (item.id)}
 			<button
 				onclick={() => (activeSection = item.id)}
-				class="group flex w-full items-center justify-between text-left transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none {activeSection ===
+				class="group flex w-full cursor-pointer items-center justify-between text-left transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none {activeSection ===
 				item.id
 					? 'font-bold text-foreground'
-					: 'text-muted-foreground hover:text-foreground'}"
+					: 'text-muted-foreground'}"
 				aria-label="{item.label} (Alt+{item.shortcut})"
 				aria-pressed={activeSection === item.id}
 			>
-				<span>[{activeSection === item.id ? '*' : ' '}] {item.label}</span>
-				{#if item.dirty}
-					<span class="text-xs">^</span>
-				{/if}
-				{#if sectionSummary(item.id)}
-					<span
-						class="truncate pl-2 text-[10px] font-normal text-muted-foreground/60 normal-case group-hover:text-foreground/60"
-						>{sectionSummary(item.id)}</span
-					>
-				{/if}
+				<span class="inline-flex items-center gap-1.5 truncate"
+					><span>[{activeSection === item.id ? '*' : ' '}]</span><span class="hover:underline">{item.label}</span></span
+				>
+				<div class="flex shrink-0 items-center gap-1">
+					<span class="w-3 text-center text-xs text-muted-foreground/60 {item.dirty ? '' : 'invisible'}">^</span>
+					{#if sectionSummary(item.id)}
+						{@const lines = sectionSummary(item.id).split(' · ')}
+						<span class="group/tip relative">
+							<span
+								class="block truncate text-[10px] font-normal text-muted-foreground/60 normal-case max-w-24 hover:text-foreground/60"
+								>{sectionSummary(item.id)}</span
+							>
+							<span
+								class="pointer-events-none absolute left-full top-1/2 z-50 ml-1.5 -translate-y-1/2 rounded-none border border-foreground/30 bg-[#f7f7f4] px-2 py-1 text-[11px] font-mono normal-case text-muted-foreground opacity-0 shadow-md transition-opacity group-hover/tip:opacity-100 max-md:hidden dark:bg-background dark:border-border"
+							>
+								<div class="flex flex-col gap-0.5 whitespace-nowrap">
+									{#each lines as line}
+										<span>{line}</span>
+									{/each}
+								</div>
+							</span>
+						</span>
+					{/if}
+				</div>
 			</button>
 		{/each}
 	</div>
@@ -115,27 +134,17 @@
 	<div class="flex flex-col gap-1.5">
 		<button
 			onclick={onUploadClick}
-			class="group flex w-full items-center justify-between text-left text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+			class="group flex w-full cursor-pointer items-center justify-between text-left text-muted-foreground transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
 		>
-			<span>[ ] UPLOAD</span>
-			<span class="text-[10px] opacity-70">Ctrl+O</span>
-		</button>
-
-		<button
-			onclick={onProcess}
-			disabled={!magick.wasmLoaded || !magick.sourceBytes}
-			class="group flex w-full items-center justify-between text-left text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-		>
-			<span>[{magick.isLoading ? '~' : ' '}] PROCESS</span>
-			<span class="text-[10px] opacity-70">Ctrl+Enter</span>
+			<span class="truncate"><span>[ ]</span> <span class="hover:underline">UPLOAD</span></span>
 		</button>
 
 		<button
 			onclick={onReset}
 			disabled={!magick.sourceBytes}
-			class="group flex w-full items-center justify-between text-left text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+			class="group flex w-full cursor-pointer items-center justify-between text-left text-muted-foreground transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 		>
-			<span>[ ] RESET ALL</span>
+			<span class="truncate"><span>[ ]</span> <span class="hover:underline">RESET ALL</span></span>
 		</button>
 	</div>
 
@@ -145,41 +154,41 @@
 			<button
 				onclick={onUndo}
 				disabled={!history.canUndo}
-				class="flex-1 px-2 py-1 text-center font-mono text-[11px] uppercase text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+				class="group flex-1 cursor-pointer px-2 py-1 text-center font-mono text-[11px] uppercase text-muted-foreground transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 			>
-				[&lt;] UNDO
+				[&lt;] <span class="group-hover:underline">UNDO</span>
 			</button>
 			<div class="w-px self-stretch bg-foreground/30"></div>
 			<button
 				onclick={onRedo}
 				disabled={!history.canRedo}
-				class="flex-1 px-2 py-1 text-center font-mono text-[11px] uppercase text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+				class="group flex-1 cursor-pointer px-2 py-1 text-center font-mono text-[11px] uppercase text-muted-foreground transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 			>
-				REDO [&gt;]
+				<span class="group-hover:underline">REDO</span> [&gt;]
 			</button>
 		</div>
 
 		<button
 			onclick={onToggleDebug}
-			class="group flex w-full items-center justify-between text-left text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none {debugMode
+			class="group flex w-full cursor-pointer items-center justify-between text-left text-muted-foreground transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none {debugMode
 				? 'text-foreground'
 				: ''}"
 		>
-			<span>[B] DEBUG</span>
+			<span class="truncate"><span>[{debugMode ? '⚠' : 'B'}]</span> <span class="hover:underline">DEBUG</span></span>
 		</button>
 
 		<button
 			onclick={onToggleTheme}
-			class="group flex w-full items-center justify-between text-left text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+			class="group flex w-full cursor-pointer items-center justify-between text-left text-muted-foreground transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
 		>
-			<span>[{isDarkMode ? '~' : 'O'}] THEME</span>
+			<span class="truncate"><span>[{isDarkMode ? '~' : 'O'}]</span> <span class="hover:underline">THEME</span></span>
 		</button>
 
 		<button
 			onclick={onToggleShortcuts}
-			class="group flex w-full items-center justify-between text-left text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+			class="group flex w-full cursor-pointer items-center justify-between text-left text-muted-foreground transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
 		>
-			<span>[?] SHORTCUTS</span>
+			<span class="truncate"><span>[?]</span> <span class="hover:underline">SHORTCUTS</span></span>
 		</button>
 	</div>
 </aside>

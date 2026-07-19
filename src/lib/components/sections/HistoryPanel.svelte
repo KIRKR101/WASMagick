@@ -17,21 +17,21 @@
 		<button
 			onclick={() => history.undo(magick)}
 			disabled={!history.canUndo}
-			class="flex-1 border border-foreground/30 font-mono text-[11px] uppercase p-1.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+			class="flex-1 cursor-pointer border border-foreground/30 font-mono text-[11px] uppercase px-2 py-1.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
 		>
-			[&lt;] UNDO
+			[&lt;] <span class="hover:underline">UNDO</span>
 		</button>
 		<button
 			onclick={() => history.redo(magick)}
 			disabled={!history.canRedo}
-			class="flex-1 border border-foreground/30 font-mono text-[11px] uppercase p-1.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+			class="flex-1 cursor-pointer border border-foreground/30 font-mono text-[11px] uppercase px-2 py-1.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
 		>
-			REDO [&gt;]
+			<span class="hover:underline">REDO</span> [&gt;]
 		</button>
 		<button
 			onclick={() => onClearRequest?.()}
 			disabled={history.count === 0}
-			class="px-2 border border-foreground/30 font-mono text-[11px] uppercase p-1.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+			class="cursor-pointer border border-foreground/30 font-mono text-[11px] uppercase px-2 py-1.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
 			aria-label="Clear history"
 		>
 			[X]

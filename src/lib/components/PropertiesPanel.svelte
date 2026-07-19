@@ -18,6 +18,7 @@
 		history,
 		presets,
 		onUploadClick,
+		onProcess,
 		onDownload,
 		onClearRequest
 	}: {
@@ -26,6 +27,7 @@
 		history: HistoryState;
 		presets: PresetsState;
 		onUploadClick: () => void;
+		onProcess: () => void;
 		onDownload: () => void;
 		onClearRequest?: () => void;
 	} = $props();
@@ -73,7 +75,7 @@
 	<div class="px-4 py-3 border-b border-foreground/30 flex justify-between items-center text-xs uppercase tracking-wider text-muted-foreground">
 		<span>{meta.title}</span>
 		{#if meta.reset && meta.dirty}
-			<button class="hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" onclick={meta.reset}>[RESET]</button>
+			<button class="cursor-pointer px-2 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" onclick={meta.reset}>[<span class="hover:underline">RESET</span>]</button>
 		{/if}
 	</div>
 
@@ -98,19 +100,29 @@
 		{/if}
 	</div>
 
-	<!-- Bottom Export Button -->
+	<!-- Bottom Action Bar -->
 	<div class="p-4 border-t border-foreground/30 mt-auto bg-[#f7f7f4] dark:bg-background">
 		<div class="flex justify-between items-center text-xs mb-3 text-muted-foreground uppercase">
 			<span>Output format</span>
-			<span class="underline underline-offset-2">{magick.settings.imageFormat}</span>
+			<span class="underline underline-offset-2">{magick.settings.imageFormat} {magick.settings.quality[0]}%</span>
 		</div>
-		<button
-			class="flex w-full items-center justify-between border border-foreground/30 bg-transparent text-muted-foreground px-3 py-2 hover:bg-foreground hover:text-background transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
-			onclick={onDownload}
-			disabled={!canDownload}
-		>
-			<span>Export canvas</span>
-			<span class="text-xs opacity-70">Ctrl+S</span>
-		</button>
+		<div class="flex flex-col gap-1.5">
+			<button
+				onclick={onProcess}
+				disabled={!magick.wasmLoaded || !magick.sourceBytes}
+				class="group flex h-8 w-full shrink-0 cursor-pointer items-center justify-between border border-foreground/30 bg-transparent px-2 font-mono text-[11px] uppercase text-muted-foreground transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+			>
+				<span><span class="group-hover:underline">PROCESS</span><span class="ml-1 inline-block w-3 text-left">{magick.isLoading ? ' ~' : ''}</span></span>
+				<span class="text-[11px] opacity-70">CTRL+<span class="text-sm">↵</span></span>
+			</button>
+			<button
+				onclick={onDownload}
+				disabled={!canDownload}
+				class="group flex h-8 w-full shrink-0 cursor-pointer items-center justify-between border border-foreground/30 bg-transparent px-2 font-mono text-[11px] uppercase text-muted-foreground transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+			>
+				<span class="group-hover:underline">EXPORT CANVAS</span>
+				<span class="text-[11px] opacity-70">CTRL+S</span>
+			</button>
+		</div>
 	</div>
 </aside>

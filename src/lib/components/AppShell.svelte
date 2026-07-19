@@ -149,7 +149,6 @@
 			{isDarkMode}
 			bind:activeSection
 			onUploadClick={openFilePicker}
-			onProcess={() => onProcess()}
 			onReset={onResetRequest}
 			{onToggleDebug}
 			{onToggleTheme}
@@ -166,6 +165,7 @@
 				{presets} 
 				bind:activeSection 
 				onUploadClick={openFilePicker} 
+				{onProcess}
 				{onDownload}
 				onClearRequest={onClearHistoryRequest}
 			/>

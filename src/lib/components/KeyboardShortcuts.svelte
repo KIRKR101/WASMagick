@@ -95,7 +95,7 @@
 	>
 		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 		<div
-			class="w-full max-w-lg animate-in border border-foreground/30 bg-[#f7f7f4] p-6 fade-in-0 zoom-in-95 dark:bg-background"
+			class="relative w-full max-w-lg animate-in border border-foreground/30 bg-[#f7f7f4] p-4 fade-in-0 zoom-in-95 dark:bg-background"
 			tabindex="-1"
 		>
 			<div class="mb-6 flex items-center gap-2 border-b border-foreground/30 pb-3">
@@ -134,7 +134,7 @@
 			</div>
 
 			<button
-				class="absolute top-3 right-3 font-mono text-[11px] text-muted-foreground/40 hover:text-foreground focus:outline-none"
+				class="absolute top-3 right-3 flex size-6 cursor-pointer items-center justify-center font-mono text-[11px] text-muted-foreground/40 focus:outline-none"
 				onclick={() => (open = false)}
 				aria-label="Close"
 			>
