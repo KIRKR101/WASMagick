@@ -72,14 +72,23 @@ function testOperation(
 		actualHeight = 0;
 	}
 
-	const outcome = compareImages(goldenPath(operation, goldenName), actualBuffer, actualWidth, actualHeight, {
-		threshold,
-		maxDiffPixels,
-		resultsDir: RESULTS,
-		label: `${operation}/${sourceName}`
-	});
+	const outcome = compareImages(
+		goldenPath(operation, goldenName),
+		actualBuffer,
+		actualWidth,
+		actualHeight,
+		{
+			threshold,
+			maxDiffPixels,
+			resultsDir: RESULTS,
+			label: `${operation}/${sourceName}`
+		}
+	);
 
-	expect(outcome.pass, `${operation}/${sourceName}: ${outcome.diffPixels}/${outcome.totalPixels}px diff (${outcome.diffPercent.toFixed(2)}%)`).toBe(true);
+	expect(
+		outcome.pass,
+		`${operation}/${sourceName}: ${outcome.diffPixels}/${outcome.totalPixels}px diff (${outcome.diffPercent.toFixed(2)}%)`
+	).toBe(true);
 }
 
 function testAllSources(
@@ -168,12 +177,18 @@ describe('Color operations', () => {
 	});
 
 	it('levels (All)', () => {
-		testAllSources('levels', '{base}-all.png', {
-			levelBlackpoint: { All: [10], Red: [0], Green: [0], Blue: [0] },
-			levelWhitepoint: { All: [90], Red: [100], Green: [100], Blue: [100] },
-			levelGamma: { All: [1.2], Red: [1.0], Green: [1.0], Blue: [1.0] },
-			levelChannels: 'All'
-		}, 0.05, 1000);
+		testAllSources(
+			'levels',
+			'{base}-all.png',
+			{
+				levelBlackpoint: { All: [10], Red: [0], Green: [0], Blue: [0] },
+				levelWhitepoint: { All: [90], Red: [100], Green: [100], Blue: [100] },
+				levelGamma: { All: [1.2], Red: [1.0], Green: [1.0], Blue: [1.0] },
+				levelChannels: 'All'
+			},
+			0.05,
+			1000
+		);
 	});
 
 	it('threshold', () => {
@@ -181,11 +196,17 @@ describe('Color operations', () => {
 	});
 
 	it('sigmoidal-contrast', () => {
-		testAllSources('sigmoidal-contrast', '{base}.png', {
-			sigmoidalContrast: [5],
-			sigmoidalMidpoint: [50],
-			sigmoidalChannels: 'All'
-		}, 0.05, 200);
+		testAllSources(
+			'sigmoidal-contrast',
+			'{base}.png',
+			{
+				sigmoidalContrast: [5],
+				sigmoidalMidpoint: [50],
+				sigmoidalChannels: 'All'
+			},
+			0.05,
+			200
+		);
 	});
 
 	it('color-space (Gray)', () => {
@@ -218,10 +239,16 @@ describe('Filter / Effect operations', () => {
 	});
 
 	it('charcoal', () => {
-		testAllSources('charcoal', '{base}-radius2.png', {
-			effect: 'charcoal',
-			charcoalIntensity: [2]
-		}, 0.05, 5200);
+		testAllSources(
+			'charcoal',
+			'{base}-radius2.png',
+			{
+				effect: 'charcoal',
+				charcoalIntensity: [2]
+			},
+			0.05,
+			5200
+		);
 	});
 
 	it('negate', () => {
@@ -229,26 +256,44 @@ describe('Filter / Effect operations', () => {
 	});
 
 	it('canny-edge', () => {
-		testAllSources('canny-edge', '{base}.png', {
-			effect: 'cannyEdge',
-			cannyEdgeStrength: [50],
-			cannyEdgeLower: [10],
-			cannyEdgeUpper: [30]
-		}, 0.05, 200);
+		testAllSources(
+			'canny-edge',
+			'{base}.png',
+			{
+				effect: 'cannyEdge',
+				cannyEdgeStrength: [50],
+				cannyEdgeLower: [10],
+				cannyEdgeUpper: [30]
+			},
+			0.05,
+			200
+		);
 	});
 
 	it('oil-paint', () => {
-		testAllSources('oil-paint', '{base}.png', {
-			effect: 'oilpaint',
-			oilpaintRadius: [3]
-		}, 0.05, 500);
+		testAllSources(
+			'oil-paint',
+			'{base}.png',
+			{
+				effect: 'oilpaint',
+				oilpaintRadius: [3]
+			},
+			0.05,
+			500
+		);
 	});
 
 	it('solarize', () => {
-		testAllSources('solarize', '{base}.png', {
-			effect: 'solarize',
-			solarizeFactor: [50]
-		}, 0.05, 200);
+		testAllSources(
+			'solarize',
+			'{base}.png',
+			{
+				effect: 'solarize',
+				solarizeFactor: [50]
+			},
+			0.05,
+			200
+		);
 	});
 
 	it('bilateral-blur', () => {
@@ -272,13 +317,18 @@ describe('Filter / Effect operations', () => {
 
 describe('Combined operations', () => {
 	it('resize + rotate + sepia', () => {
-		testOperation('combined', 'source-100x100.png', 'source-100x100-resize50-rotate90-sepia80.png', {
-			resizeW: 50,
-			resizeH: 50,
-			rotate: '90',
-			effect: 'sepia',
-			sepiaThreshold: [80]
-		});
+		testOperation(
+			'combined',
+			'source-100x100.png',
+			'source-100x100-resize50-rotate90-sepia80.png',
+			{
+				resizeW: 50,
+				resizeH: 50,
+				rotate: '90',
+				effect: 'sepia',
+				sepiaThreshold: [80]
+			}
+		);
 	});
 });
 
@@ -288,23 +338,41 @@ describe('Export operations', () => {
 	});
 
 	it('format conversion (PNG to WebP)', () => {
-		testAllSources('format-conversion', '{base}-to-webp.webp', {
-			imageFormat: 'WebP',
-			quality: [85]
-		}, 0.05, 5);
+		testAllSources(
+			'format-conversion',
+			'{base}-to-webp.webp',
+			{
+				imageFormat: 'WebP',
+				quality: [85]
+			},
+			0.05,
+			5
+		);
 	});
 
 	it('format conversion (PNG to JPEG)', () => {
-		testAllSources('format-conversion', '{base}-to-jpeg.jpg', {
-			imageFormat: 'JPEG',
-			quality: [85]
-		}, 0.05, 0);
+		testAllSources(
+			'format-conversion',
+			'{base}-to-jpeg.jpg',
+			{
+				imageFormat: 'JPEG',
+				quality: [85]
+			},
+			0.05,
+			0
+		);
 	});
 
 	it('quality', () => {
-		testAllSources('quality', '{base}-q75.jpg', {
-			imageFormat: 'JPEG',
-			quality: [75]
-		}, 0.05, 50);
+		testAllSources(
+			'quality',
+			'{base}-q75.jpg',
+			{
+				imageFormat: 'JPEG',
+				quality: [75]
+			},
+			0.05,
+			50
+		);
 	});
 });

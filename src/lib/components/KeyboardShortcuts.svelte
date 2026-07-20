@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { Command, X } from 'lucide-svelte';
-
 	let { open = $bindable(false) } = $props<{ open?: boolean }>();
 
 	const shortcuts = [

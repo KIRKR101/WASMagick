@@ -17,7 +17,6 @@
 		magick,
 		history,
 		presets,
-		onUploadClick,
 		onProcess,
 		onDownload,
 		onClearRequest
@@ -26,7 +25,6 @@
 		magick: MagickState;
 		history: HistoryState;
 		presets: PresetsState;
-		onUploadClick: () => void;
 		onProcess: () => void;
 		onDownload: () => void;
 		onClearRequest?: () => void;

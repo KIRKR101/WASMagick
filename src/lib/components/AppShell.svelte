@@ -28,8 +28,7 @@
 		onDownload,
 		onUndo,
 		onRedo,
-		onReplace,
-		onClose
+		onReplace
 	}: {
 		magick: MagickState;
 		history: HistoryState;
@@ -49,7 +48,6 @@
 		onUndo: () => void;
 		onRedo: () => void;
 		onReplace: (file: File) => Promise<void>;
-		onClose: () => void;
 	} = $props();
 
 	let fileInputEl = $state<HTMLInputElement | null>(null);
@@ -78,10 +76,6 @@
 		} catch {
 			// ignore
 		}
-	}
-
-	function onCloseRequest() {
-		guard.requestClose(onClose);
 	}
 
 	function onViewportStateChange(st: { zoom: number }) {
@@ -160,7 +154,6 @@
 			{onToggleShortcuts}
 			{onUndo}
 			{onRedo}
-			onClose={onCloseRequest}
 		/>
 
 		<div class="hidden shrink-0 md:block" style="width: var(--panel-default);">
@@ -169,7 +162,6 @@
 			{history} 
 			{presets} 
 			activeSection={activeSection}
-			onUploadClick={openFilePicker} 
 			{onProcess}
 			{onDownload}
 			onClearRequest={onClearHistoryRequest}

@@ -264,7 +264,6 @@
 		onUndo={() => history.undo(magick)}
 		onRedo={() => history.redo(magick)}
 		onReplace={replaceImage}
-		onClose={closeCurrent}
 	/>
 {/if}
 

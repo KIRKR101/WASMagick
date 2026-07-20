@@ -18,8 +18,7 @@
 		onToggleTheme,
 		onToggleShortcuts,
 		onUndo,
-		onRedo,
-		onClose
+		onRedo
 	}: {
 		activeSection?: EditorSection;
 		onSectionChange: (section: EditorSection) => void;
@@ -34,7 +33,6 @@
 		onToggleShortcuts?: () => void;
 		onUndo?: () => void;
 		onRedo?: () => void;
-		onClose?: () => void;
 	} = $props();
 
 	function sectionSummary(id: EditorSection): string {

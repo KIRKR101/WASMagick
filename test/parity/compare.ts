@@ -3,8 +3,9 @@ import { PNG } from 'pngjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
+import { magickCommand } from '../../tooling/magick-path';
 
-const COMPARE_EXE = path.resolve('tooling/imagemagick/compare.exe');
+const MAGICK = magickCommand();
 
 export interface CompareOptions {
 	threshold?: number;
@@ -27,7 +28,6 @@ export function compareImages(
 	actualHeight: number,
 	options: CompareOptions = {}
 ): CompareResult {
-	const { threshold = 0.05, maxDiffPixels = 0, resultsDir = 'test-results', label = '' } = options;
 	const ext = path.extname(expectedPath).toLowerCase();
 
 	if (ext === '.png') {
@@ -86,16 +86,16 @@ function compareViaMagick(
 ): CompareResult {
 	const { threshold = 0.05, maxDiffPixels = 0, resultsDir = 'test-results', label = '' } = options;
 
+	fs.mkdirSync(resultsDir, { recursive: true });
 	const tmpDir = fs.mkdtempSync(path.join(resultsDir, 'tmp-'));
 	const tmpActual = path.join(tmpDir, `actual${ext}`);
 	fs.writeFileSync(tmpActual, Buffer.from(actualBuffer));
 
 	const aeThreshold = Math.ceil(threshold * 100);
 	let diffPixels = 999999;
-	let totalPixels = 1;
 	try {
 		const stderr = execSync(
-			`"${COMPARE_EXE}" -metric AE -fuzz ${aeThreshold}% "${expectedPath}" "${tmpActual}" "null:"`,
+			`"${MAGICK}" compare -metric AE -fuzz ${aeThreshold}% "${expectedPath}" "${tmpActual}" "null:"`,
 			{ encoding: 'utf-8', timeout: 30000, stdio: ['pipe', 'pipe', 'pipe'] }
 		);
 
@@ -109,23 +109,25 @@ function compareViaMagick(
 		}
 	}
 
-	totalPixels = estimateTotalPixels(expectedPath);
+	const totalPixels = estimateTotalPixels(expectedPath);
 	const diffPercent = totalPixels > 0 ? (diffPixels / totalPixels) * 100 : 0;
 	const pass = diffPixels <= maxDiffPixels;
 
 	if (!pass) {
 		try {
 			const diffOut = path.join(tmpDir, 'diff.png');
-			execSync(
-				`"${COMPARE_EXE}" "${expectedPath}" "${tmpActual}" "${diffOut}"`,
-				{ encoding: 'utf-8', timeout: 30000 }
-			);
+			execSync(`"${MAGICK}" compare "${expectedPath}" "${tmpActual}" "${diffOut}"`, {
+				encoding: 'utf-8',
+				timeout: 30000
+			});
 			const diffData = fs.readFileSync(diffOut);
 			const diff = PNG.sync.read(diffData);
 			const expectedData = fs.readFileSync(expectedPath);
 			const actualData = fs.readFileSync(tmpActual);
 			writeDiffArtifacts(resultsDir, label, diff, expectedData, actualData, ext);
-		} catch { /* ignore diff image errors */ }
+		} catch {
+			/* ignore diff image errors */
+		}
 	}
 
 	cleanupTmp(tmpDir);
@@ -134,10 +136,10 @@ function compareViaMagick(
 
 function estimateTotalPixels(imagePath: string): number {
 	try {
-		const info = execSync(
-			`"${COMPARE_EXE.replace('compare.exe', 'identify.exe')}" -format "%wx%h" "${imagePath}"`,
-			{ encoding: 'utf-8', timeout: 10000 }
-		).trim();
+		const info = execSync(`"${MAGICK}" identify -format "%wx%h" "${imagePath}"`, {
+			encoding: 'utf-8',
+			timeout: 10000
+		}).trim();
 		const [w, h] = info.split('x').map(Number);
 		return w * h;
 	} catch {
@@ -164,5 +166,7 @@ function writeDiffArtifacts(
 function cleanupTmp(dir: string) {
 	try {
 		fs.rmSync(dir, { recursive: true, force: true });
-	} catch { /* ignore */ }
+	} catch {
+		/* ignore */
+	}
 }

@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button/index.js';
-	import { Input } from '$lib/components/ui/input/index.js';
 	import { Check } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 	import type { MagickState } from '$lib/useMagick.svelte';

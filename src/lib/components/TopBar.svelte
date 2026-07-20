@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Sun, Moon, Bug, Keyboard, RotateCcw, X } from 'lucide-svelte';
+	import { X } from 'lucide-svelte';
 	import type { MagickState } from '$lib/useMagick.svelte';
 	import type { HistoryState } from '$lib/hooks/useHistory.svelte';
 	import HoverTooltip from './controls/HoverTooltip.svelte';

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { ImageIcon } from 'lucide-svelte';
 	import type { MagickState } from '$lib/useMagick.svelte';
 	import type { HistoryState } from '$lib/hooks/useHistory.svelte';
 	import { formatBytes } from '$lib/utils';
