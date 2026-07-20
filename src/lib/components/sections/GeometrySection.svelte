@@ -22,20 +22,20 @@
 
 	const GRAVITY_OPTIONS = [
 		{ value: 'Center', label: 'Center' },
-		{ value: 'NorthWest', label: 'Top Left' },
+		{ value: 'Northwest', label: 'Top Left' },
 		{ value: 'North', label: 'Top Center' },
-		{ value: 'NorthEast', label: 'Top Right' },
+		{ value: 'Northeast', label: 'Top Right' },
 		{ value: 'West', label: 'Left' },
 		{ value: 'East', label: 'Right' },
-		{ value: 'SouthWest', label: 'Bottom Left' },
+		{ value: 'Southwest', label: 'Bottom Left' },
 		{ value: 'South', label: 'Bottom Center' },
-		{ value: 'SouthEast', label: 'Bottom Right' }
+		{ value: 'Southeast', label: 'Bottom Right' }
 	];
 </script>
 
 <div class="space-y-5">
 	<!-- Resize -->
-	<SectionCard title="Resize">
+	<SectionCard title="Resize" dirty={magick.settings.resizeW != null || magick.settings.resizeH != null}>
 		<div class="grid grid-cols-2 gap-2">
 			<div class="relative">
 				<span
@@ -67,7 +67,7 @@
 	</SectionCard>
 
 	<!-- Rotate + Transform + Auto Orient -->
-	<SectionCard title="Rotate">
+	<SectionCard title="Rotate" dirty={magick.settings.rotate !== '0' || magick.settings.flip || magick.settings.flop || magick.settings.autoOrient}>
 		<div class="grid grid-cols-2 gap-3">
 			<Select type="single" bind:value={magick.settings.rotate}>
 				<SelectTrigger class="w-full h-9 text-xs font-mono">
@@ -112,7 +112,7 @@
 	</SectionCard>
 
 	<!-- Deskew -->
-	<SectionCard title="Deskew">
+	<SectionCard title="Deskew" dirty={magick.settings.deskewThreshold[0] > 0}>
 		<ToggleRow
 			id="geo-deskew-crop"
 			label="Auto Crop"
@@ -129,7 +129,7 @@
 	</SectionCard>
 
 	<!-- Canvas Extent -->
-	<SectionCard title="Canvas Extent">
+	<SectionCard title="Canvas Extent" dirty={magick.settings.extentW != null || magick.settings.extentH != null}>
 		<div class="grid grid-cols-2 gap-2 mb-2">
 			<div class="relative">
 				<span
@@ -186,7 +186,7 @@
 	</SectionCard>
 
 	<!-- Border -->
-	<SectionCard title="Border">
+	<SectionCard title="Border" dirty={magick.settings.borderSize[0] > 0}>
 		<div class="flex items-end gap-3">
 			<div class="flex-1">
 				<SliderRow

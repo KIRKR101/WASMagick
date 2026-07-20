@@ -6,7 +6,8 @@
 	import { DEFAULT_SETTINGS } from '$lib/useMagick.svelte';
 
 	let {
-		activeSection = $bindable(),
+		activeSection,
+		onSectionChange,
 		magick,
 		history,
 		debugMode = false,
@@ -21,6 +22,7 @@
 		onClose
 	}: {
 		activeSection?: EditorSection;
+		onSectionChange: (section: EditorSection) => void;
 		magick: MagickState;
 		history: HistoryState;
 		debugMode?: boolean;
@@ -40,37 +42,106 @@
 		switch (id) {
 			case 'geometry': {
 				const parts: string[] = [];
-				if (s.resizeW || s.resizeH) parts.push(`${s.resizeW ?? 'A'}×${s.resizeH ?? 'A'}`);
-				if (s.rotate !== '0') parts.push(`${s.rotate}°`);
+				if (s.resizeW || s.resizeH) parts.push(`Resize ${s.resizeW ?? 'A'}×${s.resizeH ?? 'A'}`);
+				if (s.rotate !== '0') parts.push(`Rotate ${s.rotate}°`);
+				if (s.flip) parts.push('Flip');
+				if (s.flop) parts.push('Flop');
+				if (s.borderSize[0] > 0) parts.push(`Border ${s.borderSize[0]}px`);
+				if (s.extentW || s.extentH) {
+					parts.push(`Extent ${s.extentW ?? 'A'}×${s.extentH ?? 'A'}`);
+				}
+				if (s.deskewThreshold[0] > 0) parts.push(`Deskew ${s.deskewThreshold[0]}%`);
+				if (s.autoOrient) parts.push('Auto-Orient');
 				return parts.join(' · ');
 			}
 			case 'color': {
 				const parts: string[] = [];
-				if (s.brightness[0] !== 100) parts.push(`Brt ${s.brightness[0]}%`);
-				if (s.saturation[0] !== 100) parts.push(`Sat ${s.saturation[0]}%`);
+				if (s.brightness[0] !== 100) parts.push(`Brightness ${s.brightness[0]}%`);
+				if (s.saturation[0] !== 100) parts.push(`Saturation ${s.saturation[0]}%`);
 				if (s.hue[0] !== 100) parts.push(`Hue ${s.hue[0]}%`);
-				if (s.contrast[0] !== 0) parts.push(`Con ${s.contrast[0]}`);
+				if (s.contrast[0] !== 0) parts.push(`Contrast ${s.contrast[0]}`);
+				if (s.normalizeImage) parts.push('Normalize');
+				if (s.autoLevel) parts.push('Auto-Level');
+				const levelParts: string[] = [];
+				for (const ch of ['All', 'Red', 'Green', 'Blue'] as const) {
+					const bp = s.levelBlackpoint[ch][0];
+					const wp = s.levelWhitepoint[ch][0];
+					const gm = s.levelGamma[ch][0];
+					if (bp !== 0 || wp !== 100 || gm !== 1.0) {
+						levelParts.push(`${ch} ${bp}/${wp}/${gm}`);
+					}
+				}
+				if (levelParts.length > 0) {
+					parts.push(`Level ${levelParts.join(' | ')}`);
+				}
+				if (s.thresholdPercentage[0] !== 50) {
+					parts.push(`Threshold ${s.thresholdPercentage[0]}%`);
+				}
+				if (s.sigmoidalContrast[0] !== 0) {
+					parts.push(`Sigmoidal ${s.sigmoidalContrast[0]}@${s.sigmoidalMidpoint[0]}`);
+				}
 				if (s.colorSpace !== 'RGB') parts.push(s.colorSpace);
 				return parts.join(' · ');
 			}
 			case 'filters': {
 				const parts: string[] = [];
-				if (s.effect !== 'none') parts.push(s.effect);
+				if (s.effect !== 'none') {
+					parts.push(effectLabel(s.effect));
+					switch (s.effect) {
+						case 'sepia':
+							if (s.sepiaThreshold[0] !== 80) parts.push(`Threshold ${s.sepiaThreshold[0]}%`);
+							break;
+						case 'charcoal':
+							if (s.charcoalIntensity[0] > 0) parts.push(`Intensity ${s.charcoalIntensity[0]}`);
+							break;
+						case 'cannyEdge':
+							parts.push(`S${s.cannyEdgeStrength[0]} L${s.cannyEdgeLower[0]} U${s.cannyEdgeUpper[0]}`);
+							break;
+						case 'oilpaint':
+							if (s.oilpaintRadius[0] > 0) parts.push(`Radius ${s.oilpaintRadius[0]}`);
+							break;
+						case 'solarize':
+							if (s.solarizeFactor[0] !== 50) parts.push(`Factor ${s.solarizeFactor[0]}%`);
+							break;
+						case 'bilateralBlur':
+							parts.push(`${s.bilateralWidth[0]}×${s.bilateralHeight[0]}`);
+							break;
+					}
+				}
 				if (s.blur[0] > 0) parts.push(`Blur ${s.blur[0]}`);
-				if (s.sharpen[0] > 0) parts.push(`Sharp ${s.sharpen[0]}`);
+				if (s.sharpen[0] > 0) parts.push(`Sharpen ${s.sharpen[0]}`);
 				return parts.join(' · ');
 			}
 			case 'export': {
 				if (
 					s.imageFormat === DEFAULT_SETTINGS.imageFormat &&
-					s.quality[0] === DEFAULT_SETTINGS.quality[0]
+					s.quality[0] === DEFAULT_SETTINGS.quality[0] &&
+					s.stripMeta === DEFAULT_SETTINGS.stripMeta
 				) {
 					return '';
 				}
-				return `${s.imageFormat} ${s.quality[0]}%`;
+				const parts: string[] = [];
+				if (s.imageFormat !== DEFAULT_SETTINGS.imageFormat) parts.push(s.imageFormat);
+				if (s.quality[0] !== DEFAULT_SETTINGS.quality[0]) parts.push(`Quality ${s.quality[0]}%`);
+				if (!s.stripMeta) parts.push('Keep Meta');
+				return parts.join(' · ');
 			}
 			default:
 				return '';
+		}
+	}
+
+	function effectLabel(effect: string): string {
+		switch (effect) {
+			case 'grayscale': return 'Grayscale';
+			case 'sepia': return 'Sepia';
+			case 'charcoal': return 'Charcoal';
+			case 'negate': return 'Negate';
+			case 'cannyEdge': return 'Canny Edge';
+			case 'oilpaint': return 'Oil Paint';
+			case 'solarize': return 'Solarize';
+			case 'bilateralBlur': return 'Bilateral Blur';
+			default: return effect;
 		}
 	}
 
@@ -82,6 +153,8 @@
 		{ id: 'presets', label: 'PRESETS', shortcut: '5' },
 		{ id: 'history', label: 'HISTORY', shortcut: '6' }
 	]);
+
+	let anyDirty = $derived(items.some(item => item.dirty));
 </script>
 
 <aside
@@ -94,7 +167,7 @@
 	<div class="mb-6 flex flex-col gap-1.5">
 		{#each items as item (item.id)}
 			<button
-				onclick={() => (activeSection = item.id)}
+				onclick={() => onSectionChange(item.id)}
 				class="group flex w-full cursor-pointer items-center justify-between text-left transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none {activeSection ===
 				item.id
 					? 'font-bold text-foreground'
@@ -141,7 +214,7 @@
 
 		<button
 			onclick={onReset}
-			disabled={!magick.sourceBytes}
+			disabled={!anyDirty}
 			class="group flex w-full cursor-pointer items-center justify-between text-left text-muted-foreground transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 		>
 			<span class="truncate"><span>[ ]</span> <span class="hover:underline">RESET ALL</span></span>

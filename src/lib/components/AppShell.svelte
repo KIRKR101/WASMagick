@@ -94,6 +94,10 @@
 		guard.pending?.kind === 'close' ? 'close' : 'replace'
 	);
 
+	function setSection(section: EditorSection) {
+		activeSection = section;
+	}
+
 	function onConfirmReplace() {
 		void guard.confirmPending();
 	}
@@ -147,7 +151,8 @@
 			{history}
 			{debugMode}
 			{isDarkMode}
-			bind:activeSection
+			activeSection={activeSection}
+			onSectionChange={setSection}
 			onUploadClick={openFilePicker}
 			onReset={onResetRequest}
 			{onToggleDebug}
@@ -159,16 +164,16 @@
 		/>
 
 		<div class="hidden shrink-0 md:block" style="width: var(--panel-default);">
-			<PropertiesPanel 
-				{magick} 
-				{history} 
-				{presets} 
-				bind:activeSection 
-				onUploadClick={openFilePicker} 
-				{onProcess}
-				{onDownload}
-				onClearRequest={onClearHistoryRequest}
-			/>
+		<PropertiesPanel 
+			{magick} 
+			{history} 
+			{presets} 
+			activeSection={activeSection}
+			onUploadClick={openFilePicker} 
+			{onProcess}
+			{onDownload}
+			onClearRequest={onClearHistoryRequest}
+		/>
 		</div>
 
 		<div class="min-w-0 flex-1">

@@ -112,7 +112,7 @@
 	{/if}
 
 	<!-- Blur + Sharpen -->
-	<SectionCard title="Blur / Sharpen">
+	<SectionCard title="Blur / Sharpen" dirty={magick.settings.blur[0] > 0 || magick.settings.sharpen[0] > 0}>
 		<div class="grid grid-cols-2 gap-3">
 			<SliderRow label="Blur" bind:value={magick.settings.blur} min={0} max={20} step={0.5} />
 			<SliderRow label="Sharpen" bind:value={magick.settings.sharpen} min={0} max={10} step={0.5} />

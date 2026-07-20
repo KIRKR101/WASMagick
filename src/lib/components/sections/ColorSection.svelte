@@ -6,11 +6,14 @@
 		SelectTrigger
 	} from '$lib/components/ui/select/index.js';
 	import type { MagickState } from '$lib/useMagick.svelte';
+	import type { LevelChannel } from '$lib/types';
 	import SliderRow from '$lib/components/controls/SliderRow.svelte';
 	import ToggleRow from '$lib/components/controls/ToggleRow.svelte';
 	import SectionCard from '$lib/components/controls/SectionCard.svelte';
 
 	let { magick } = $props<{ magick: MagickState }>();
+
+	const LEVEL_CHS = ['All', 'Red', 'Green', 'Blue'] as const;
 
 	const COLORSPACE_OPTIONS = [
 		{ value: 'RGB', label: 'RGB' },
@@ -18,7 +21,7 @@
 		{ value: 'CMYK', label: 'CMYK' },
 		{ value: 'HSL', label: 'HSL' },
 		{ value: 'HSV', label: 'HSV' },
-		{ value: 'LAB', label: 'LAB' }
+		{ value: 'Lab', label: 'Lab' }
 	];
 
 	const CHANNEL_OPTIONS = [
@@ -31,7 +34,7 @@
 
 <div class="space-y-5">
 	<!-- Modulate -->
-	<SectionCard title="Adjust">
+	<SectionCard title="Adjust" dirty={magick.settings.brightness[0] !== 100 || magick.settings.contrast[0] !== 0 || magick.settings.saturation[0] !== 100 || magick.settings.hue[0] !== 100}>
 		<div class="space-y-4">
 			<SliderRow
 				label="Brightness"
@@ -72,7 +75,7 @@
 	</div>
 
 	<!-- Levels -->
-	<SectionCard title="Levels">
+	<SectionCard title="Levels" dirty={LEVEL_CHS.some(ch => magick.settings.levelBlackpoint[ch][0] !== 0 || magick.settings.levelWhitepoint[ch][0] !== 100 || magick.settings.levelGamma[ch][0] !== 1.0)}>
 		<div class="mb-3 flex items-center justify-start">
 			<Select type="single" bind:value={magick.settings.levelChannels}>
 				<SelectTrigger class="w-24 h-9 text-xs font-mono">
@@ -88,19 +91,19 @@
 		<div class="space-y-3">
 			<SliderRow
 				label="Black Point"
-				bind:value={magick.settings.levelBlackpoint}
+				bind:value={magick.settings.levelBlackpoint[magick.settings.levelChannels as LevelChannel]}
 				min={0}
 				max={100}
 			/>
 			<SliderRow
 				label="White Point"
-				bind:value={magick.settings.levelWhitepoint}
+				bind:value={magick.settings.levelWhitepoint[magick.settings.levelChannels as LevelChannel]}
 				min={0}
 				max={100}
 			/>
 			<SliderRow
 				label="Gamma"
-				bind:value={magick.settings.levelGamma}
+				bind:value={magick.settings.levelGamma[magick.settings.levelChannels as LevelChannel]}
 				min={0.1}
 				max={3}
 				step={0.1}
@@ -109,7 +112,7 @@
 	</SectionCard>
 
 	<!-- Advanced -->
-	<SectionCard title="Advanced Color">
+	<SectionCard title="Advanced Color" dirty={magick.settings.thresholdPercentage[0] !== 50 || magick.settings.sigmoidalContrast[0] !== 0}>
 		<div class="space-y-3">
 			<SliderRow
 				label="Threshold"

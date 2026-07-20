@@ -31,11 +31,19 @@ export function isGeoDirty(s: MagickSettings): boolean {
 		s.extentW != null ||
 		s.extentH != null ||
 		s.deskewThreshold[0] > 0 ||
+		!s.deskewAutoCrop ||
 		s.autoOrient
 	);
 }
 
 export function isColorDirty(s: MagickSettings): boolean {
+	const levelChs = ['All', 'Red', 'Green', 'Blue'] as const;
+	const levelDirty = levelChs.some(
+		ch =>
+			s.levelBlackpoint[ch][0] !== 0 ||
+			s.levelWhitepoint[ch][0] !== 100 ||
+			s.levelGamma[ch][0] !== 1.0
+	);
 	return (
 		s.normalizeImage ||
 		s.autoLevel ||
@@ -43,9 +51,7 @@ export function isColorDirty(s: MagickSettings): boolean {
 		s.contrast[0] !== 0 ||
 		s.saturation[0] !== 100 ||
 		s.hue[0] !== 100 ||
-		s.levelBlackpoint[0] !== 0 ||
-		s.levelWhitepoint[0] !== 100 ||
-		s.levelGamma[0] !== 1.0 ||
+		levelDirty ||
 		s.thresholdPercentage[0] !== 50 ||
 		s.sigmoidalContrast[0] !== 0 ||
 		s.colorSpace !== 'RGB'

@@ -13,7 +13,7 @@
 	import HistoryPanel from './sections/HistoryPanel.svelte';
 
 	let {
-		activeSection = $bindable('geometry'),
+		activeSection,
 		magick,
 		history,
 		presets,
