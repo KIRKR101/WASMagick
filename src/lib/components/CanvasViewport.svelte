@@ -114,6 +114,12 @@
 	export function zoomOut() {
 		setZoom(currentZoom - zoomStep);
 	}
+	export function startCompare() {
+		if (processedImageUrl) isComparing = true;
+	}
+	export function endCompare() {
+		isComparing = false;
+	}
 	export function toggleSplitCompare() {
 		if (canSplit) splitMode = !splitMode;
 	}

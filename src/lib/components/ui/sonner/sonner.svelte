@@ -103,4 +103,24 @@
 	:global(.toaster .sonner-toast .sonner-toast-close-button svg) {
 		display: none;
 	}
+
+	@media (max-width: 767px) {
+		:global(.toaster[data-sonner-toaster]) {
+			font-size: 10px;
+		}
+
+		:global(.toaster .sonner-toast) {
+			font-size: 10px;
+			padding: 8px 10px;
+			gap: 6px;
+		}
+
+		:global(.toaster .sonner-toast .sonner-toast-content) {
+			font-size: 10px;
+		}
+
+		:global(.toaster .sonner-toast .sonner-toast-description) {
+			font-size: 9px;
+		}
+	}
 </style>

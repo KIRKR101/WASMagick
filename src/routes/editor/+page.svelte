@@ -2,11 +2,13 @@
 	import { onMount } from 'svelte';
 	import { UploadCloud } from 'lucide-svelte';
 	import AppShell from '$lib/components/AppShell.svelte';
+	import MobileAppShell from '$lib/components/MobileAppShell.svelte';
 	import KeyboardShortcuts from '$lib/components/KeyboardShortcuts.svelte';
 	import { useMagick } from '$lib/useMagick.svelte';
 	import { useHistory } from '$lib/hooks/useHistory.svelte';
 	import { usePresets } from '$lib/hooks/usePresets.svelte';
 	import { useReplaceGuard, installClipboardPaste } from '$lib/hooks/useReplaceGuard.svelte';
+	import { MOBILE_BREAKPOINT } from '$lib/constants.js';
 	import type { EditorSection } from '$lib/editor-types';
 
 	const magick = useMagick();
@@ -19,6 +21,15 @@
 	let globalDragging = $state(false);
 	let showShortcuts = $state(false);
 	let activeSection = $state<EditorSection>('geometry');
+	let isMobile = $state(false);
+
+	onMount(() => {
+		const mql = window.matchMedia(MOBILE_BREAKPOINT);
+		isMobile = mql.matches;
+		const handler = (e: MediaQueryListEvent) => (isMobile = e.matches);
+		mql.addEventListener('change', handler);
+		return () => mql.removeEventListener('change', handler);
+	});
 
 	let viewport: import('$lib/components/CanvasViewport.svelte').default | null = $state(null);
 
@@ -218,26 +229,43 @@
 	</div>
 {/if}
 
-<AppShell
-	{magick}
-	{history}
-	{presets}
-	{guard}
-	{debugMode}
-	{isDarkMode}
-	bind:activeSection
-	bind:viewport
-	isDragging={globalDragging}
-	onToggleDebug={() => (debugMode = !debugMode)}
-	onToggleTheme={toggleDarkMode}
-	onToggleShortcuts={() => (showShortcuts = !showShortcuts)}
-	onProcess={processCurrent}
-	onReset={() => magick.resetSettings()}
-	onDownload={() => magick.downloadImage()}
-	onUndo={() => history.undo(magick)}
-	onRedo={() => history.redo(magick)}
-	onReplace={replaceImage}
-	onClose={closeCurrent}
-/>
+{#if isMobile}
+	<MobileAppShell
+		{magick}
+		{history}
+		{presets}
+		{guard}
+		bind:activeSection
+		isDragging={globalDragging}
+		onProcess={processCurrent}
+		onReset={() => magick.resetSettings()}
+		onDownload={() => magick.downloadImage()}
+		onUndo={() => history.undo(magick)}
+		onRedo={() => history.redo(magick)}
+		onReplace={replaceImage}
+		onClose={closeCurrent}
+	/>
+{:else}
+	<AppShell
+		{magick}
+		{history}
+		{presets}
+		{guard}
+		{debugMode}
+		{isDarkMode}
+		bind:activeSection
+		isDragging={globalDragging}
+		onToggleDebug={() => (debugMode = !debugMode)}
+		onToggleTheme={toggleDarkMode}
+		onToggleShortcuts={() => (showShortcuts = !showShortcuts)}
+		onProcess={processCurrent}
+		onReset={() => magick.resetSettings()}
+		onDownload={() => magick.downloadImage()}
+		onUndo={() => history.undo(magick)}
+		onRedo={() => history.redo(magick)}
+		onReplace={replaceImage}
+		onClose={closeCurrent}
+	/>
+{/if}
 
 <KeyboardShortcuts bind:open={showShortcuts} />
